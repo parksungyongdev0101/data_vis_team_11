@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SO Developer Landscape (2025)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="data/so_devs.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0f1c;color:#c8cde8;font-family:'Segoe UI',system-ui,sans-serif;
+       display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:22px 20px 32px}
+  .header{text-align:center;margin-bottom:12px}
+  .header h1{font-size:17px;font-weight:600;color:#fff}
+  .header p{font-size:11px;color:#8990b8;margin-top:3px}
+  .header .src{font-size:10px;color:#4a5290;margin-top:4px}
+
+  .presets{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+  .preset{padding:6px 13px;border-radius:18px;border:1px solid #2a2f50;background:#141626;color:#9aa1c8;
+    cursor:pointer;font-size:11px;transition:all .15s}
+  .preset.on{background:#2a3160;color:#fff;border-color:#4a5290}
+  .preset:hover{color:#fff}
+
+  .controls{display:flex;gap:18px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+  .ctl-group{display:flex;flex-direction:column;gap:5px}
+  .ctl-group label{font-size:9px;color:#9aa1c8;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+  select{background:#141626;color:#c8cde8;border:1px solid #2e3252;border-radius:6px;padding:6px 24px 6px 9px;font-size:12px;
+    cursor:pointer;appearance:none;min-width:130px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239aa1c8'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+  .layout{display:flex;gap:16px;align-items:flex-start}
+  .panel{background:#111323;border-radius:10px;padding:12px 14px}
+  .panel h4{font-size:10px;color:#7c83ad;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700}
+  .panel h4 .sub{font-size:10px;color:#5a6090;font-weight:400;text-transform:none;letter-spacing:0}
+  .right-col{display:flex;flex-direction:column;gap:14px;width:280px}
+
+  svg{overflow:visible}
+  .grid line{stroke:#1c2036;stroke-dasharray:3,3}
+  .axis path,.axis line{stroke:#2e3252}
+  .axis text{fill:#8990b8;font-size:10px}
+  .axis-title{fill:#c8cde8;font-size:11px}
+  .band-sep{stroke:#191d30}
+  .dot{cursor:pointer}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{background:#161a2e;border-radius:8px;padding:9px 10px}
+  .stat .v{font-size:18px;font-weight:700;color:#fff}
+  .stat .v small{font-size:11px;color:#8990b8;font-weight:400}
+  .stat .k{font-size:9px;color:#7c83ad;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat.wide{grid-column:1/3}
+
+  .comp-row{margin-bottom:7px}
+  .comp-top{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:3px}
+  .comp-top .lab{color:#c8cde8;display:flex;align-items:center;gap:6px}
+  .comp-top .pct{color:#8990b8}
+  .comp-track{height:7px;background:#1c2036;border-radius:4px;position:relative}
+  .comp-fill{height:7px;border-radius:4px;transition:width .3s}
+  .comp-base{position:absolute;top:-2px;height:11px;width:2px;background:#c8cde8;opacity:.55}
+  .sw{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+  .legend{display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap;max-width:680px}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#a8aedb;cursor:pointer;
+    padding:2px 7px;border-radius:14px;border:1px solid transparent;transition:all .15s}
+  .legend-item.iso{border-color:#4a5290;background:#1c2138;color:#fff}
+  .legend-item.dim{opacity:.32}
+  .legend-sw{width:10px;height:10px;border-radius:50%}
+
+  /* filter bar */
+  .filters{display:flex;gap:18px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;justify-content:center;
+    background:#111426;border:1px solid #232843;border-radius:10px;padding:10px 16px}
+  .filters .cnt{font-size:11px;color:#8990b8}
+  .filters .cnt b{color:#cdd3f5}
+  .range-wrap{width:200px}
+  .range{position:relative;height:28px;margin-top:4px}
+  .range .track{position:absolute;top:12px;left:0;right:0;height:4px;background:#2a2f50;border-radius:2px}
+  .range .fill{position:absolute;top:12px;height:4px;background:#5a6bd8;border-radius:2px}
+  .range input[type=range]{position:absolute;top:0;left:0;width:100%;height:28px;margin:0;background:none;-webkit-appearance:none;appearance:none;pointer-events:none}
+  .range input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:15px;height:15px;border-radius:50%;background:#cdd3f5;border:2px solid #5a6bd8;cursor:pointer}
+  .range input[type=range]::-moz-range-thumb{pointer-events:auto;width:15px;height:15px;border-radius:50%;background:#cdd3f5;border:2px solid #5a6bd8;cursor:pointer}
+  .rlab{font-size:11px;color:#cdd3f5;font-weight:600;margin-top:1px}
+
+  .tooltip{position:fixed;background:#141733;border:1px solid #343a63;border-radius:10px;padding:0;font-size:11px;
+    pointer-events:none;opacity:0;transition:opacity .12s;z-index:100;width:210px;box-shadow:0 8px 24px #0008;overflow:hidden}
+  .tt-head{padding:9px 12px 8px;border-bottom:1px solid #262b48}
+  .tt-role{font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+  .tt-meta{font-size:10px;color:#8990b8;margin-top:3px}
+  .tt-body{padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+  .tt-line{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .tt-k{color:#7c83ad;font-size:10px}.tt-v{color:#dfe3fb;font-size:11px;text-align:right}.tt-v b{color:#fff}
+  .tt-langs{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-end}
+  .tt-chip{background:#262b48;color:#c8cde8;border-radius:4px;padding:1px 6px;font-size:9.5px}
+  .tt-foot{padding:7px 12px;border-top:1px solid #262b48;display:flex;gap:10px;align-items:center}
+  .tt-badge{display:flex;align-items:center;gap:4px;font-size:10px;color:#c8cde8}
+  .tt-badge .d{width:8px;height:8px;border-radius:50%}
+  .tt-sat{margin-left:auto;font-size:10px;color:#8990b8}.tt-sat b{color:#fff}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>개발자 지형 — 점 하나 = 개발자 한 명</h1>
+  <p>축을 바꾸면 3,000명이 날아가 재배치됩니다 · 점 hover로 프로필 · 범례 클릭으로 그 집단만</p>
+  <div class="src">출처: Stack Overflow Developer Survey 2025 · 연봉·경력 유효 응답 22,858명 중 3,000명 표본</div>
+</div>
+
+<div class="presets" id="presets"></div>
+
+<div class="controls">
+  <div class="ctl-group"><label>X 축</label><select id="xSel"></select></div>
+  <div class="ctl-group"><label>Y 축</label><select id="ySel"></select></div>
+  <div class="ctl-group"><label>색상</label><select id="cSel"></select></div>
+</div>
+
+<div class="filters">
+  <div class="ctl-group"><label>국가</label><select id="fCountry"></select></div>
+  <div class="ctl-group"><label>분야</label><select id="fRole"></select></div>
+  <div class="ctl-group"><label>연차 범위</label>
+    <div class="range-wrap"><div class="range"><div class="track"></div><div class="fill" id="yFill"></div>
+      <input type="range" id="yMin" min="0" max="50" value="0"><input type="range" id="yMax" min="0" max="50" value="50"></div>
+      <div class="rlab" id="yLab">0 ~ 50년+</div></div>
+  </div>
+  <div class="cnt" id="cntHint"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="layout">
+  <div class="panel"><h4 id="chartTitle">탐색 <span class="sub"></span></h4><svg id="scatter"></svg></div>
+  <div class="right-col">
+    <div class="panel"><h4 id="statTitle">집단 요약 <span class="sub">(전체)</span></h4><div class="stats" id="stats"></div></div>
+    <div class="panel"><h4 id="compTitle">구성 <span class="sub">— 흰 선 = 전체</span></h4><div id="comp"></div></div>
+  </div>
+</div>
+<div class="legend" id="legend"></div>
+
+<script>
+const D=window.SO_DEVS;
+const F={}; D.fields.forEach((f,i)=>F[f]=i);
+const devs=D.devs;
+
+// remote vocab (string field)
+const REMOTE=[...new Set(devs.map(d=>d[F.remote]).filter(Boolean))];
+function remoteIdx(d){ const v=d[F.remote]; return v?REMOTE.indexOf(v):-1; }
+
+// ---- axis definitions ----
+const NUM={
+  yearsCode:{label:"코딩 경력 (년)", get:d=>d[F.yearsCode], scale:"lin", dom:[0,d3.max(devs,d=>d[F.yearsCode])], fmt:d=>d},
+  comp:{label:"연봉 (USD)", get:d=>Math.max(1000,d[F.comp]), scale:"log", dom:[1000,400000], fmt:d=>"$"+(d>=1000?(d/1000)+"K":d), ticks:[1000,3000,10000,30000,100000,300000]},
+  jobSat:{label:"직무 만족도 (0–10)", get:d=>d[F.jobSat]>=0?d[F.jobSat]:null, scale:"lin", dom:[0,10], fmt:d=>d},
+};
+const CAT={
+  role:{label:"역할", get:d=>d[F.role], vocab:D.roles},
+  aiUse:{label:"AI 사용", get:d=>d[F.aiUse], vocab:D.aiUse},
+  threat:{label:"AI 위협인식", get:d=>d[F.threat], vocab:D.threats},
+  age:{label:"연령대", get:d=>d[F.age], vocab:D.ages},
+  remote:{label:"근무형태", get:d=>remoteIdx(d), vocab:REMOTE},
+};
+const kindOf=k=>NUM[k]?"num":"cat";
+const defOf=k=>NUM[k]||CAT[k];
+
+// ---- color schemes ----
+const PALETTE={
+  aiUse:["#34d399","#4e9af1","#a78bfa","#facc15","#ef4444"],
+  threat:["#34d399","#facc15","#ef4444"],
+  role:d3.schemeTableau10.concat(["#8c564b","#e377c2","#7f7f7f","#bcbd22"]),
+  age:["#60a5fa","#34d399","#a78bfa","#facc15","#fb923c","#ef4444"],
+  remote:["#34d399","#4e9af1","#facc15","#a78bfa"],
+};
+function colCatIdx(d,dim){ return defOf(dim).get(d); }
+function colorOf(d){ const i=colCatIdx(d,colorDim); const p=PALETTE[colorDim]; return i>=0?p[i%p.length]:"#39406a"; }
+function catLabel(d,dim){ const i=defOf(dim).get(d); return i>=0?defOf(dim).vocab[i]:"무응답"; }
+
+// ---- state ----
+let xKey="yearsCode", yKey="comp", colorDim="aiUse", isolate=null; // isolate = vocab index of colorDim
+const MAXY=Math.min(50,Math.ceil(d3.max(devs,d=>d[F.yearsCode])));
+let fCountry=null, fRole=null, yMin=0, yMax=50;
+function passFilter(d){
+  if(fCountry!=null && d[F.country]!==fCountry) return false;
+  if(fRole!=null && d[F.role]!==fRole) return false;
+  const yc=d[F.yearsCode];
+  if(yc<yMin || yc>yMax) return false;
+  return true;
+}
+function filteredDevs(){ return devs.filter(passFilter); }
+
+// ---- layout ----
+const SW=580,SH=480,SM={top:16,right:18,bottom:64,left:70};
+const iW=SW-SM.left-SM.right, iH=SH-SM.top-SM.bottom;
+const svg=d3.select("#scatter").attr("width",SW).attr("height",SH);
+const g=svg.append("g").attr("transform",`translate(${SM.left},${SM.top})`);
+const gGrid=g.append("g").attr("class","grid");
+const gAxX=g.append("g").attr("class","axis").attr("transform",`translate(0,${iH})`);
+const gAxY=g.append("g").attr("class","axis");
+const gDots=g.append("g");
+const xTitle=g.append("text").attr("class","axis-title").attr("text-anchor","middle").attr("x",iW/2).attr("y",iH+46);
+const yTitle=g.append("text").attr("class","axis-title").attr("text-anchor","middle").attr("transform","rotate(-90)").attr("x",-iH/2).attr("y",-52);
+const tooltip=document.getElementById("tooltip");
+
+// build scales for current axes
+let xScale,yScale; // funcs value->px ; for cat, band point scale
+function buildScale(key,range,isX){
+  const def=defOf(key);
+  if(kindOf(key)==="num"){
+    const s=def.scale==="log"?d3.scaleLog():d3.scaleLinear();
+    s.domain(def.dom).range(range).clamp(true);
+    return {type:"num",s,def};
+  } else {
+    const b=d3.scalePoint().domain(def.vocab.map((_,i)=>i)).range(range).padding(0.7);
+    return {type:"cat",s:b,def};
+  }
+}
+function posFor(d,sc,key){
+  const def=defOf(key); const v=def.get(d);
+  if(sc.type==="num"){ return v==null?null:sc.s(v); }
+  else { return v<0?null:sc.s(v); }
+}
+
+// nodes for force
+const nodes=devs.map((d,i)=>({d,i,x:iW/2+(Math.random()-.5)*40,y:iH/2+(Math.random()-.5)*40}));
+const sim=d3.forceSimulation(nodes)
+  .alphaDecay(0.04)
+  .force("x",d3.forceX(n=>n.tx==null?-120:n.tx).strength(n=>n.tx==null?0.05:0.55))
+  .force("y",d3.forceY(n=>n.ty==null?iH+120:n.ty).strength(n=>n.ty==null?0.05:0.55))
+  .force("collide",d3.forceCollide(2.8).strength(.9))
+  .on("tick",ticked);
+
+let circles=gDots.selectAll(".dot").data(nodes).join("circle")
+  .attr("class","dot").attr("r",3.4)
+  .on("mouseover",function(e,n){ d3.select(this).attr("r",6).attr("stroke","#fff").attr("stroke-width",1).raise();
+    tooltip.style.opacity="1"; tooltip.innerHTML=profileCard(n.d); })
+  .on("mousemove",e=>{tooltip.style.left=(e.clientX+14)+"px";tooltip.style.top=(e.clientY-30)+"px";})
+  .on("mouseout",function(){ d3.select(this).attr("r",3.4).attr("stroke","none"); tooltip.style.opacity="0"; });
+
+function ticked(){
+  nodes.forEach(n=>{ if(n.tx!=null) n.x=Math.max(0,Math.min(iW,n.x)); if(n.ty!=null) n.y=Math.max(0,Math.min(iH,n.y)); });
+  circles.attr("cx",n=>n.x).attr("cy",n=>n.y);
+}
+
+function hiddenNode(n){ return n.tx==null||n.ty==null; }
+function excluded(n){ return isolate!=null && colCatIdx(n.d,colorDim)!==isolate; }
+
+function applyColors(){
+  circles.attr("fill",n=>colorOf(n.d))
+    .attr("fill-opacity",n=> hiddenNode(n)?0.0 : excluded(n)?0.05 : 0.66)
+    .style("pointer-events",n=>(hiddenNode(n)||excluded(n))?"none":"all");
+}
+
+function layout(animate=true){
+  const xc=buildScale(xKey,[0,iW],true), yc=buildScale(yKey,[iH,0],false);
+  xScale=xc; yScale=yc;
+  nodes.forEach(n=>{ if(passFilter(n.d)){ n.tx=posFor(n.d,xc,xKey); n.ty=posFor(n.d,yc,yKey); } else { n.tx=null; n.ty=null; } });
+  drawAxes(xc,yc);
+  applyColors();
+  // re-create position forces so they re-read updated tx/ty (d3 caches targets on init)
+  sim.force("x",d3.forceX(n=>n.tx==null?-120:n.tx).strength(n=>n.tx==null?0.05:0.55));
+  sim.force("y",d3.forceY(n=>n.ty==null?iH+120:n.ty).strength(n=>n.ty==null?0.05:0.55));
+  sim.alpha(0.9).restart();
+  // titles
+  xTitle.text(defOf(xKey).label+(kindOf(xKey)==="num"?" →":""));
+  yTitle.text(defOf(yKey).label+(kindOf(yKey)==="num"?" →":""));
+}
+
+function drawAxes(xc,yc){
+  // grid + axis X
+  gGrid.selectAll("*").remove();
+  gAxX.selectAll("*").remove(); gAxY.selectAll("*").remove();
+  // X
+  if(xc.type==="num"){
+    const ax=d3.axisBottom(xc.s).tickSize(6).tickPadding(6);
+    if(xc.def.ticks) ax.tickValues(xc.def.ticks); else ax.ticks(7);
+    ax.tickFormat(xc.def.fmt);
+    gAxX.call(ax);
+    gGrid.append("g").attr("transform",`translate(0,${iH})`).call(
+      (xc.def.ticks?d3.axisBottom(xc.s).tickValues(xc.def.ticks):d3.axisBottom(xc.s).ticks(7)).tickSize(-iH).tickFormat(""));
+  } else {
+    xc.def.vocab.forEach((lab,i)=>{
+      const px=xc.s(i);
+      gAxX.append("text").attr("x",px).attr("y",16).attr("text-anchor","end")
+        .attr("transform",`rotate(-35,${px},16)`).attr("fill","#8990b8").attr("font-size",10).text(lab);
+      gGrid.append("line").attr("class","band-sep").attr("x1",px).attr("x2",px).attr("y1",0).attr("y2",iH);
+    });
+  }
+  // Y
+  if(yc.type==="num"){
+    const ay=d3.axisLeft(yc.s).tickSize(6).tickPadding(6);
+    if(yc.def.ticks) ay.tickValues(yc.def.ticks); else ay.ticks(6);
+    ay.tickFormat(yc.def.fmt);
+    gAxY.call(ay);
+    gGrid.append("g").call(
+      (yc.def.ticks?d3.axisLeft(yc.s).tickValues(yc.def.ticks):d3.axisLeft(yc.s).ticks(6)).tickSize(-iW).tickFormat(""));
+  } else {
+    yc.def.vocab.forEach((lab,i)=>{
+      const py=yc.s(i);
+      gAxY.append("text").attr("x",-8).attr("y",py).attr("text-anchor","end").attr("dominant-baseline","middle")
+        .attr("fill","#8990b8").attr("font-size",10).text(lab);
+      gGrid.append("line").attr("class","band-sep").attr("x1",0).attr("x2",iW).attr("y1",py).attr("y2",py);
+    });
+  }
+}
+
+// ---- profile card ----
+function profileCard(d){
+  const role=d[F.role]>=0?D.roles[d[F.role]]:"개발자";
+  const age=d[F.age]>=0?D.ages[d[F.age]]:null, country=d[F.country]||null, remote=d[F.remote]||null, ed=d[F.ed]||null;
+  const yc=d[F.yearsCode], comp=d[F.comp], langs=d[F.langs]||[];
+  const aiI=d[F.aiUse], thI=d[F.threat];
+  const ai=aiI>=0?D.aiUse[aiI]:"무응답", th=thI>=0?D.threats[thI]:"무응답", sat=d[F.jobSat]>=0?d[F.jobSat]:null;
+  const meta=[age,country,remote].filter(Boolean).join(" · ");
+  const chips=langs.length?`<div class="tt-langs">${langs.map(l=>`<span class="tt-chip">${l}</span>`).join("")}</div>`:`<span class="tt-v">—</span>`;
+  return `<div class="tt-head"><div class="tt-role">${role}</div>${meta?`<div class="tt-meta">${meta}</div>`:""}</div>
+    <div class="tt-body">
+      <div class="tt-line"><span class="tt-k">경력 · 연봉</span><span class="tt-v"><b>${yc}년</b> · <b>$${(comp/1000).toFixed(0)}K</b></span></div>
+      ${ed?`<div class="tt-line"><span class="tt-k">학력</span><span class="tt-v">${ed}</span></div>`:""}
+      <div class="tt-line"><span class="tt-k">주력 언어</span>${chips}</div>
+    </div>
+    <div class="tt-foot">
+      <span class="tt-badge"><span class="d" style="background:${aiI>=0?PALETTE.aiUse[aiI]:"#39406a"}"></span>AI ${ai}</span>
+      <span class="tt-badge"><span class="d" style="background:${thI>=0?PALETTE.threat[thI]:"#39406a"}"></span>위협 ${th}</span>
+      ${sat!=null?`<span class="tt-sat">만족 <b>${sat}</b>/10</span>`:""}
+    </div>`;
+}
+
+// ---- side panels ----
+function activeSet(){
+  let base=filteredDevs();
+  if(isolate!=null) base=base.filter(d=>colCatIdx(d,colorDim)===isolate);
+  return base;
+}
+function median(a){ if(!a.length)return null; const s=[...a].sort((x,y)=>x-y); const m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function updateStats(set){
+  const comps=set.map(d=>d[F.comp]), yrs=set.map(d=>d[F.yearsCode]);
+  const aiDaily=set.filter(d=>d[F.aiUse]===0).length, aiAns=set.filter(d=>d[F.aiUse]>=0).length;
+  const thYes=set.filter(d=>d[F.threat]===2).length, thAns=set.filter(d=>d[F.threat]>=0).length;
+  const pct=(a,b)=>b?Math.round(100*a/b):0;
+  document.getElementById("statTitle").innerHTML=`집단 요약 <span class="sub">(${isolate!=null?defOf(colorDim).vocab[isolate]:"전체"})</span>`;
+  document.getElementById("stats").innerHTML=`
+    <div class="stat"><div class="v">${set.length.toLocaleString()}</div><div class="k">개발자 수</div></div>
+    <div class="stat"><div class="v">$${median(comps)?(median(comps)/1000).toFixed(0):"–"}<small>K</small></div><div class="k">연봉 중앙값</div></div>
+    <div class="stat"><div class="v">${median(yrs)??"–"}<small>년</small></div><div class="k">경력 중앙값</div></div>
+    <div class="stat"><div class="v">${pct(aiDaily,aiAns)}<small>%</small></div><div class="k">AI 매일 사용</div></div>
+    <div class="stat wide"><div class="v" style="color:${pct(thYes,thAns)>25?'#ef4444':'#fff'}">${pct(thYes,thAns)}<small>%</small></div><div class="k">AI를 위협으로 느낌</div></div>`;
+}
+function updateComp(set){
+  const dim=colorDim, def=defOf(dim), pal=PALETTE[dim];
+  document.getElementById("compTitle").innerHTML=`${def.label} 구성 <span class="sub">— 흰 선 = 전체</span>`;
+  const dist=arr=>{ const c=new Array(def.vocab.length).fill(0); let t=0;
+    arr.forEach(d=>{const i=def.get(d); if(i>=0){c[i]++;t++;}}); return c.map(v=>t?v/t:0); };
+  const sd=dist(set), ad=dist(filteredDevs());
+  const order=def.vocab.map((_,i)=>i).sort((a,b)=>sd[b]-sd[a]);
+  const max=Math.max(...sd,...ad,0.01);
+  const el=document.getElementById("comp"); el.innerHTML="";
+  order.forEach(i=>{ if(sd[i]===0&&ad[i]<0.02)return;
+    const col=pal[i%pal.length];
+    const row=document.createElement("div"); row.className="comp-row";
+    row.innerHTML=`<div class="comp-top"><span class="lab"><span class="sw" style="background:${col}"></span>${def.vocab[i]}</span><span class="pct">${Math.round(sd[i]*100)}%</span></div>
+      <div class="comp-track"><div class="comp-fill" style="width:${sd[i]/max*100}%;background:${col}"></div><div class="comp-base" style="left:${ad[i]/max*100}%"></div></div>`;
+    el.appendChild(row);
+  });
+}
+function updatePanels(){ const set=activeSet(); updateStats(set); updateComp(set); }
+
+// ---- legend ----
+function renderLegend(){
+  const def=defOf(colorDim), pal=PALETTE[colorDim];
+  const el=document.getElementById("legend"); el.innerHTML="";
+  def.vocab.forEach((v,i)=>{
+    const it=document.createElement("div");
+    it.className="legend-item"+(isolate===i?" iso":(isolate!=null?" dim":""));
+    it.innerHTML=`<div class="legend-sw" style="background:${pal[i%pal.length]}"></div>${v}`;
+    it.addEventListener("click",()=>{ isolate=(isolate===i)?null:i; renderLegend(); applyColors(); updatePanels(); });
+    el.appendChild(it);
+  });
+}
+
+// ---- selects ----
+function fillSelect(sel,keys,cur){ sel.innerHTML=keys.map(k=>`<option value="${k}">${defOf(k).label}</option>`).join(""); sel.value=cur; }
+const AXIS_KEYS=[...Object.keys(NUM),...Object.keys(CAT)];
+const COLOR_KEYS=Object.keys(CAT);
+fillSelect(document.getElementById("xSel"),AXIS_KEYS,xKey);
+fillSelect(document.getElementById("ySel"),AXIS_KEYS,yKey);
+fillSelect(document.getElementById("cSel"),COLOR_KEYS,colorDim);
+document.getElementById("xSel").addEventListener("change",function(){xKey=this.value;setPresetActive(null);layout();});
+document.getElementById("ySel").addEventListener("change",function(){yKey=this.value;setPresetActive(null);layout();});
+document.getElementById("cSel").addEventListener("change",function(){colorDim=this.value;isolate=null;renderLegend();applyColors();updatePanels();setPresetActive(null);});
+
+// ---- presets ----
+const PRESETS=[
+  {name:"경력 × 연봉", x:"yearsCode", y:"comp", c:"aiUse"},
+  {name:"역할별 연봉", x:"role", y:"comp", c:"role"},
+  {name:"AI 사용별 연봉", x:"aiUse", y:"comp", c:"aiUse"},
+  {name:"위협 × 만족도", x:"threat", y:"jobSat", c:"threat"},
+  {name:"경력 × 만족도", x:"yearsCode", y:"jobSat", c:"threat"},
+  {name:"연령 × 연봉", x:"age", y:"comp", c:"aiUse"},
+];
+const presetsEl=document.getElementById("presets");
+PRESETS.forEach((p,idx)=>{
+  const b=document.createElement("button"); b.className="preset"+(idx===0?" on":""); b.textContent=p.name;
+  b.addEventListener("click",()=>{
+    xKey=p.x; yKey=p.y; colorDim=p.c; isolate=null;
+    document.getElementById("xSel").value=xKey; document.getElementById("ySel").value=yKey; document.getElementById("cSel").value=colorDim;
+    setPresetActive(idx); renderLegend(); layout(); updatePanels();
+  });
+  presetsEl.appendChild(b);
+});
+function setPresetActive(idx){ document.querySelectorAll(".preset").forEach((b,i)=>b.classList.toggle("on",i===idx)); }
+
+// ---- filters UI ----
+function updateCount(){ document.getElementById("cntHint").innerHTML=`표시 중 <b>${filteredDevs().length.toLocaleString()}</b> / 3,000명`; }
+function buildFilters(){
+  // 국가: 응답수 상위
+  const cc={}; devs.forEach(d=>{ const c=d[F.country]; if(c) cc[c]=(cc[c]||0)+1; });
+  const top=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,15).map(e=>e[0]);
+  const cSel=document.getElementById("fCountry");
+  cSel.innerHTML=`<option value="">전체</option>`+top.map(c=>`<option value="${c}">${c}</option>`).join("");
+  cSel.addEventListener("change",function(){ fCountry=this.value||null; layout(); updatePanels(); updateCount(); });
+  // 분야
+  const rSel=document.getElementById("fRole");
+  rSel.innerHTML=`<option value="">전체</option>`+D.roles.map((r,i)=>`<option value="${i}">${r}</option>`).join("");
+  rSel.addEventListener("change",function(){ fRole=this.value===""?null:+this.value; layout(); updatePanels(); updateCount(); });
+  // 연차 dual range
+  const mn=document.getElementById("yMin"), mx=document.getElementById("yMax"), fill=document.getElementById("yFill"), lab=document.getElementById("yLab");
+  mn.max=MAXY; mx.max=MAXY; mx.value=MAXY;
+  function sync(){ let a=+mn.value,b=+mx.value; if(a>b){[a,b]=[b,a];} yMin=a; yMax=b;
+    fill.style.left=(a/MAXY*100)+"%"; fill.style.width=((b-a)/MAXY*100)+"%";
+    lab.textContent=`${a} ~ ${b>=MAXY?MAXY+"년+":b+"년"}`; layout(); updatePanels(); updateCount(); }
+  mn.addEventListener("input",sync); mx.addEventListener("input",sync);
+  fill.style.width="100%";
+}
+
+// init
+buildFilters(); renderLegend(); layout(false); updatePanels(); updateCount();
+</script>
+</body>
+</html>
