@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q2: Who Is Gaining an Edge in the AI Era?</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.55; }
+
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,15,0.92); backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e1e2e; padding: 14px 24px; display: flex; gap: 22px; align-items: center; }
+  .nav .logo { font-weight: 800; color: #fff; margin-right: 8px; }
+  .nav a { color: #888; text-decoration: none; font-size: 14px; font-weight: 500; transition: color .15s; }
+  .nav a:hover, .nav a.active { color: #a78bfa; }
+
+  .header { text-align: center; padding: 110px 24px 40px; background: linear-gradient(180deg, #12121a 0%, #0a0a0f 100%); }
+  .header h1 { font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .header .subtitle { font-size: 15px; color: #888; }
+  .header .question { font-size: 18px; color: #a78bfa; font-weight: 500; margin-top: 18px; font-style: italic; }
+
+  .scene { max-width: 1080px; margin: 0 auto; padding: 64px 24px; border-top: 1px solid #16161f; }
+  .scene-num { font-size: 12px; font-weight: 700; color: #6b6b8a; letter-spacing: 2px; text-transform: uppercase; }
+  .scene-title { font-size: 26px; font-weight: 700; color: #fff; margin: 6px 0 8px; letter-spacing: -0.3px; }
+  .scene-lead { font-size: 16px; color: #b0b0c0; max-width: 760px; margin-bottom: 24px; }
+  .scene-lead b { color: #fff; }
+
+  .chart-container { background: #13131d; border-radius: 14px; padding: 26px; border: 1px solid #1e1e2e; position: relative; }
+  .insight { font-size: 14px; color: #c9bdf2; background: rgba(167,139,250,0.08);
+    border-left: 3px solid #a78bfa; padding: 12px 16px; margin-top: 18px; border-radius: 0 8px 8px 0; }
+  .insight b { color: #fff; }
+
+  svg text { font-family: 'Inter', sans-serif; }
+  .axis text { fill: #888; font-size: 11px; }
+  .axis path, .axis line { stroke: #2a2a3a; }
+  .gridline line { stroke: #1c1c28; }
+
+  .tooltip { position: fixed; background: #1e1e2e; border: 1px solid #333; border-radius: 8px;
+    padding: 10px 13px; font-size: 12px; color: #e0e0e0; pointer-events: none; opacity: 0;
+    transition: opacity .12s; z-index: 1000; max-width: 280px; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
+  .tooltip strong { color: #fff; }
+  .tooltip .r { display: flex; justify-content: space-between; gap: 14px; }
+  .tooltip .r span:first-child { color: #999; }
+
+  .btn { font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: #a78bfa;
+    border: 0; border-radius: 9px; padding: 9px 18px; cursor: pointer; transition: background .15s; }
+  .btn:hover { background: #b9a3fb; }
+  .btn.ghost { background: transparent; border: 1px solid #2e2e42; color: #aaa; }
+  .btn.ghost.on { border-color: #a78bfa; color: #a78bfa; }
+  .yrbtns { display: flex; gap: 6px; }
+  .yrbtn { font: inherit; font-size: 13px; font-weight: 600; border: 1px solid #2e2e42; background: #1a1a26; color: #aaa; border-radius: 8px; padding: 7px 13px; cursor: pointer; transition: all .12s; }
+  .yrbtn:hover { border-color: #4a4a64; }
+  .yrbtn.on { background: #1f1f2e; border-color: #a78bfa; color: #fff; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  .controls label { font-size: 12px; color: #888; margin-right: 2px; }
+  select { font: inherit; font-size: 13px; background: #1a1a26; color: #e0e0e0; border: 1px solid #2e2e42;
+    border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+
+  .big-stat { font-size: 15px; color: #888; margin-top: 10px; }
+  .big-stat .pos { color: #4ade80; font-weight: 700; }
+  .big-stat .neg { color: #f87171; font-weight: 700; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: #aaa; margin-top: 14px; }
+  .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+  .footer { text-align: center; padding: 40px 24px 80px; color: #555; font-size: 12px; }
+  .reveal-label { font-size: 22px; font-weight: 700; transition: opacity .4s; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="logo">Team 11</span>
+  <a href="q2.html" class="active">Q2 · Careers & AI</a>
+  <a href="salary.html" style="margin-left:auto;color:#a78bfa;">💰 Salary Estimator</a>
+</nav>
+
+<header class="header">
+  <h1>Who Is Gaining an Edge — and Who Is Falling Behind?</h1>
+  <div class="subtitle">Stack Overflow Developer Survey 2023–2025 · GitHub Innovation Graph · Team 11</div>
+  <div class="question">How is AI transforming developers' work, compensation, and careers?</div>
+</header>
+
+<!-- SCENE 0: adoption surge (the setup) -->
+<section class="scene" id="s0">
+  <div class="scene-num">01 · The Surge</div>
+  <h2 class="scene-title">AI Went From Novelty to Default</h2>
+  <p class="scene-lead">First, the setup. In just three years AI tools went from a <b>minority habit</b> to
+    <b>near-universal</b> among developers. Each square is 1 of every 100 developers — press Play to watch
+    the grid fill from <b>44</b> to <b>79</b>.</p>
+  <div class="chart-container">
+    <div class="controls">
+      <button class="btn" id="playBtn0">▶ Play 2023→2025</button>
+      <div class="yrbtns" id="yrBtns0"></div>
+      <span class="legend" id="legend0" style="margin:0 0 0 8px"></span>
+    </div>
+    <div id="chart0"></div>
+    <div class="big-stat" id="stat0"></div>
+  </div>
+  <div class="insight" id="insight0"></div>
+</section>
+
+<!-- SCENE 1 -->
+<section class="scene" id="s1">
+  <div class="scene-num">02 · The Mood</div>
+  <h2 class="scene-title">The Honeymoon Is Over</h2>
+  <p class="scene-lead">Everyone is adopting AI — usage climbed from <b>44%</b> to <b>79%</b> in three years.
+    So why is the mood souring? Favorability is collapsing and distrust now outweighs trust.</p>
+  <div class="chart-container"><div id="chart1"></div>
+    <div class="legend" id="legend1"></div></div>
+  <div class="insight" id="insight1"></div>
+</section>
+
+<!-- SCENE 2 -->
+<section class="scene" id="s2">
+  <div class="scene-num">03 · The Twist</div>
+  <h2 class="scene-title">Do AI users earn more? In most countries — and the gap is growing</h2>
+  <p class="scene-lead">Everyone is adopting AI — but does <b>everyone benefit?</b> Each bubble is a country:
+    <b>above the line, AI users out-earn non-users.</b> Press Play to watch 2023→2025 — most bubbles
+    rise above parity, even as the <i>global pooled</i> number stays negative (the geography illusion).</p>
+  <div class="chart-container">
+    <div class="controls">
+      <button class="btn" id="playBtn">▶ Play 2023→2025</button>
+      <div class="yrbtns" id="yrBtns"></div>
+      <span class="legend" id="legend2" style="margin:0 0 0 8px"></span>
+    </div>
+    <div id="chart2"></div>
+    <div class="big-stat" id="stat2"></div>
+  </div>
+  <div class="insight" id="insight2"></div>
+</section>
+
+<!-- SCENE 3 -->
+<section class="scene" id="s3">
+  <div class="scene-num">04 · The Mechanism</div>
+  <h2 class="scene-title">The Catch-up Bet</h2>
+  <p class="scene-lead">Why the illusion? <b>Lower-income economies adopt AI hardest.</b>
+    Ukraine sits at 61% daily use, the US at 40%. AI is a leapfrog lever — which drags the global
+    median for "AI users" down.</p>
+  <div class="chart-container"><div id="chart3"></div></div>
+  <div class="insight" id="insight3"></div>
+</section>
+
+<!-- SCENE 4 -->
+<section class="scene" id="s4">
+  <div class="scene-num">05 · The Fear</div>
+  <h2 class="scene-title">The Exposure Paradox</h2>
+  <p class="scene-lead">The more deeply you use AI, the more it threatens you (left).
+    Yet within one country, threat perception has <b>no relationship</b> with actual pay (right).
+    Fear tracks exposure, not economics.</p>
+  <div class="chart-container"><div id="chart4"></div></div>
+  <div class="insight" id="insight4"></div>
+</section>
+
+<!-- SCENE 5 -->
+<section class="scene" id="s5">
+  <div class="scene-num">06 · The Boundary</div>
+  <h2 class="scene-title">The Trust Boundary</h2>
+  <p class="scene-lead">Developers hand AI the keyboard for exploration — but keep humans on the
+    levers that touch production. There's a sharp cliff between the two.</p>
+  <div class="chart-container"><div id="chart5"></div>
+    <div class="legend" id="legend5"></div></div>
+  <div class="insight" id="insight5"></div>
+</section>
+
+<!-- SCENE 6 -->
+<section class="scene" id="s6">
+  <div class="scene-num">07 · The Real Junior Risk</div>
+  <h2 class="scene-title">The Atrophy Gradient</h2>
+  <p class="scene-lead">The genuine risk to juniors isn't lower pay (a statistical mirage) — it's
+    developmental. <b>1 in 3 juniors</b> feel AI is eroding their own problem-solving skills,
+    versus 1 in 12 of the most senior.</p>
+  <div class="chart-container"><div id="chart6"></div>
+    <div class="legend" id="legend6"></div></div>
+  <div class="insight" id="insight6"></div>
+</section>
+
+<!-- SCENE 7 -->
+<section class="scene" id="s7">
+  <div class="scene-num">08 · The Divide</div>
+  <h2 class="scene-title">The Adoption Divide</h2>
+  <p class="scene-lead">And none of this is evenly distributed. "AI-first" (fintech, startups, AI/ML
+    engineers, the young) pulls away from "AI-cautious" (government, big corp, academia, 55+).</p>
+  <div class="chart-container"><div id="chart7"></div></div>
+  <div class="insight" id="insight7"></div>
+</section>
+
+<!-- SCENE 8 -->
+<section class="scene" id="s8">
+  <div class="scene-num">09 · Explore</div>
+  <h2 class="scene-title">Free Exploration</h2>
+  <p class="scene-lead">Each bubble is a developer group (role × experience). Switch the axes to
+    explore the data yourself. Hover for details.</p>
+  <div class="chart-container">
+    <div class="controls">
+      <label>X</label><select id="xSel"></select>
+      <label>Y</label><select id="ySel"></select>
+      <label>Color</label><select id="cSel"></select>
+    </div>
+    <div id="chart8"></div>
+  </div>
+  <div class="insight">💡 Tip: try X = Median salary, Y = AI daily %, Color = Threat — the AI-first
+    groups cluster low-salary/high-adoption, but that's the geography illusion at work again.</div>
+</section>
+
+<div class="footer">
+  Source: Stack Overflow Developer Survey 2023 (n=89,184), 2024 (n=65,437), 2025 (n=49,191) ·
+  All salary figures are medians within [$1K, $500K]. See Q2.md for methodology.
+</div>
+
+<div class="tooltip" id="tt"></div>
+
+<script>
+const tt = d3.select("#tt");
+const fmt$ = d => "$" + d3.format(",")(Math.round(d));
+const fmtK = d => "$" + d3.format(".0f")(d/1000) + "K";
+function showTT(html, ev) { tt.html(html).style("opacity",1).style("left",(ev.clientX+14)+"px").style("top",(ev.clientY+14)+"px"); }
+function hideTT() { tt.style("opacity",0); }
+
+// scene activation. NOTE: observe() is called only after all activators are
+// defined (end of the data .then()), so the observer's initial callback for any
+// scene already in view at load — i.e. Scene 1 — fires with its activator ready.
+const seen = new Set();
+const obs = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ const fn=activators[e.target.id];
+    if(e.isIntersecting && fn && !seen.has(e.target.id)){ seen.add(e.target.id); fn(); } });
+},{threshold:0.15});
+const activators = {};
+
+Promise.all([
+  d3.json("data/q2_temporal.json"),
+  d3.json("data/q2_premium.json"),
+  d3.json("data/q2_country.json"),
+  d3.json("data/q2_exposure.json"),
+  d3.json("data/q2_tasks.json"),
+  d3.json("data/q2_atrophy.json"),
+  d3.json("data/q2_divide.json"),
+  d3.json("data/q2_groups.json"),
+  d3.json("data/q2_country_years.json"),
+]).then(([temporal, premium, country, exposure, tasks, atrophy, divide, groups, countryYears])=>{
+
+  /* ---------- SCENE 0: adoption surge — waffle (100 devs) over years ---------- */
+  (function(){
+    const yrs=temporal.years, using=temporal.series.using, noplan=temporal.series.noplan;
+    const W=980,H=300,cols=25,rowsN=4,N=100;
+    const m={t:18,r:30,b:18,l:30};
+    const cw=(W-m.l-m.r)/cols, ch=(H-m.t-m.b)/rowsN, pad=4, sz=Math.min(cw,ch)-pad;
+    const svg=d3.select("#chart0").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    // big watermark year
+    const wm=svg.append("text").attr("x",W-m.r-6).attr("y",H-m.b-6).attr("text-anchor","end")
+      .attr("font-size",150).attr("font-weight",800).attr("fill","#fff").attr("opacity",0.04);
+    // cells (fill order: bottom-left → up, so the grid "fills up")
+    const cells=d3.range(N).map(i=>{
+      const col=i%cols, row=rowsN-1-Math.floor(i/cols);   // fill from bottom row up
+      return {i, x:m.l+col*cw+pad/2, y:m.t+row*ch+pad/2};
+    });
+    const rects=svg.selectAll("rect").data(cells).join("rect")
+      .attr("x",d=>d.x).attr("y",d=>d.y).attr("width",sz).attr("height",sz).attr("rx",3)
+      .attr("fill","#23232f");
+    const stat=d3.select("#stat0");
+    d3.select("#legend0").html(`<span><span class="sw" style="background:#a78bfa"></span>uses AI tools</span> &nbsp; <span><span class="sw" style="background:#23232f;border:1px solid #333"></span>does not</span>`);
+    let curY=yrs[0], playing=false, timer=null;
+    function render(year,animate){
+      curY=year; const idx=yrs.indexOf(year), dur=animate?700:0;
+      wm.text(year);
+      d3.selectAll("#yrBtns0 .yrbtn").classed("on",d=>d===year);
+      const filled=Math.round(using[idx]);
+      rects.transition().duration(dur).delay((d)=> animate? d.i*8:0)
+        .attr("fill",d=>d.i<filled?"#a78bfa":"#23232f");
+      stat.html(`<b>${year}</b> · <span style="color:#a78bfa;font-weight:700">${using[idx]}%</span> of developers use AI tools `+
+        `· only ${noplan[idx]}% have no plan to. ${year==="2025"?"Daily use is now the single most common answer.":""}`);
+    }
+    function stop(){ playing=false; if(timer)clearInterval(timer); timer=null; d3.select("#playBtn0").text("▶ Play 2023→2025"); }
+    function play(){
+      if(playing){ stop(); return; }
+      playing=true; d3.select("#playBtn0").text("❚❚ Pause");
+      let i=yrs.indexOf(curY); if(i>=yrs.length-1) i=-1;
+      const tick=()=>{ i++; render(yrs[i],true); if(i>=yrs.length-1) stop(); };
+      tick(); timer=setInterval(tick,1500);
+    }
+    d3.select("#yrBtns0").selectAll("button").data(yrs).join("button").attr("class","yrbtn").text(d=>d)
+      .on("click",(ev,d)=>{ stop(); render(d,true); });
+    d3.select("#playBtn0").on("click",play);
+    activators["s0"]=()=>{ render(yrs[0],false); setTimeout(()=>{ if(!playing) play(); },600); };
+    d3.select("#insight0").html(`<b>Adoption is near-universal — and accelerating.</b> AI tool use jumped <b>44% → 62% → 79%</b> in three years, while "no plan to use it" shrank to just 16%. So the pressing question isn't <i>whether</i> developers use AI — it's whether everyone who does is actually <b>better off for it</b>. That's what the next scenes test.`);
+  })();
+
+  /* ---------- SCENE 1: sentiment "river" (diverging stacked stream) ---------- */
+  (function(){
+    const W=980,H=420,m={t:24,r:150,b:40,l:48};
+    const svg=d3.select("#chart1").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const years=temporal.years.map(Number);
+    // order bottom→top so favorable sits above the zero baseline, unfavorable below
+    const cats=[
+      {key:"Very unfavorable",color:"#dc2626"},
+      {key:"Unfavorable",color:"#f87171"},
+      {key:"Indifferent",color:"#6b7280"},
+      {key:"Favorable",color:"#4ade80"},
+      {key:"Very favorable",color:"#16a34a"},
+    ];
+    // diverging baseline: negatives (unfavorable side) go down, positives (favorable) go up, indifferent straddles
+    const x=d3.scalePoint().domain(years).range([m.l,W-m.r]).padding(0.05);
+    const y=d3.scaleLinear().domain([-45,80]).range([H-m.b,m.t]);
+    // build stacked offsets per year with indifferent centered on 0
+    const stacks=years.map((yr,i)=>{
+      const v=k=>temporal.sentiment[k][i]||0;
+      const ind=v("Indifferent");
+      let acc=ind/2;                          // favorable side grows upward from +ind/2
+      const up={};
+      ["Favorable","Very favorable"].forEach(k=>{ up[k]=[acc,acc+v(k)]; acc+=v(k); });
+      acc=-ind/2;                             // unfavorable side grows downward
+      const dn={};
+      ["Unfavorable","Very unfavorable"].forEach(k=>{ dn[k]=[acc-v(k),acc]; acc-=v(k); });
+      const indBand=[-ind/2,ind/2];
+      return {yr,i,bands:{...up,...dn,Indifferent:indBand}};
+    });
+    svg.append("g").attr("class","axis").attr("transform",`translate(0,${H-m.b})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+    svg.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","#444").attr("stroke-dasharray","3 3");
+    const area=cat=>d3.area().x(s=>x(s.yr)).y0(s=>y(s.bands[cat][0])).y1(s=>y(s.bands[cat][1])).curve(d3.curveMonotoneX);
+    const lg=d3.select("#legend1");
+    activators["s1"]=()=>{
+      cats.forEach((c,ci)=>{
+        svg.append("path").datum(stacks).attr("fill",c.color).attr("opacity",0)
+          .attr("d",area(c.key))
+          .on("mousemove",ev=>showTT(`<strong>${c.key}</strong><div class="r"><span>2023→2025</span><span>${temporal.sentiment[c.key].map(v=>v+"%").join(" → ")}</span></div>`,ev))
+          .on("mouseleave",hideTT)
+          .transition().duration(700).delay(ci*90).attr("opacity",0.9);
+        // right-edge labels with the 2025 share
+        const last=stacks[stacks.length-1].bands[c.key];
+        svg.append("text").attr("x",W-m.r+10).attr("y",y((last[0]+last[1])/2)).attr("dy","0.35em")
+          .attr("fill",c.color).attr("font-size",11.5).attr("font-weight",600).attr("opacity",0)
+          .text(`${c.key} ${temporal.sentiment[c.key][2]}%`)
+          .transition().delay(ci*90+500).attr("opacity",1);
+      });
+      // adoption overlay line (thin) — usage rising, on a secondary read
+      const usage=temporal.series.using;
+      const yU=d3.scaleLinear().domain([0,100]).range([H-m.b,m.t]);
+      const ln=d3.line().x((d,i)=>x(years[i])).y(d=>yU(d)).curve(d3.curveMonotoneX);
+      const p=svg.append("path").datum(usage).attr("fill","none").attr("stroke","#fff").attr("stroke-width",1.5)
+        .attr("stroke-dasharray","2 3").attr("opacity",0.55).attr("d",ln);
+      svg.append("text").attr("x",x(years[0])).attr("y",yU(usage[0])-8).attr("fill","#bbb").attr("font-size",10).attr("opacity",0)
+        .text("AI adoption "+usage[0]+"%→"+usage[2]+"%").transition().delay(700).attr("opacity",0.8);
+      lg.html(`<span style="color:#16a34a">▲ favorable</span> · <span style="color:#6b7280">indifferent</span> · <span style="color:#dc2626">▼ unfavorable</span> · <span style="color:#fff">┄ AI adoption</span> &nbsp; (band width = share of developers)`);
+    };
+    d3.select("#insight1").html(`<b>The trough of disillusionment.</b> The red (unfavorable) bank of the river <b>swells from 3% to 21%</b> as adoption climbs to 79% — the more developers actually rely on AI, the more they sour on it. Confirmed within the USA alone (favorable 77% → 54%).`);
+  })();
+
+  /* ---------- SCENE 2: country bubbles over years ---------- */
+  (function(){
+    const W=980,H=560,m={t:24,r:30,b:62,l:64};
+    const svg=d3.select("#chart2").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const CY=countryYears, yrs=CY.years;
+    const allN=d3.max(CY.countries,c=>d3.max(yrs,y=>c.years[y]?c.years[y].n:0));
+    const x=d3.scaleLog().domain([14000,210000]).range([m.l,W-m.r]);
+    const y=d3.scaleLinear().domain([-45,60]).range([H-m.b,m.t]);
+    const r=d3.scaleSqrt().domain([0,allN]).range([4,46]);
+    const col=t=>t==="high"?"#3a9d8e":"#cf7a3a";
+    const labelSet=new Set(["United States of America","United Kingdom of Great Britain and Northern Ireland",
+      "Germany","France","Canada","India","Ukraine","Brazil","Japan","Poland","South Korea"]);
+    const shortName=c=>({"United States of America":"USA","United Kingdom of Great Britain and Northern Ireland":"UK"}[c]||c);
+    // watermark year (behind everything)
+    const wm=svg.append("text").attr("x",W-m.r-10).attr("y",H-m.b-30).attr("text-anchor","end")
+      .attr("font-size",170).attr("font-weight",800).attr("fill","#ffffff").attr("opacity",0.04);
+    // gridlines + axes
+    svg.append("g").attr("class","gridline").selectAll("line").data(y.ticks(6)).join("line")
+      .attr("x1",m.l).attr("x2",W-m.r).attr("y1",d=>y(d)).attr("y2",d=>y(d));
+    svg.append("g").attr("class","axis").attr("transform",`translate(0,${H-m.b})`)
+      .call(d3.axisBottom(x).tickValues([20000,30000,50000,80000,150000]).tickFormat(fmtK));
+    svg.append("g").attr("class","axis").attr("transform",`translate(${m.l},0)`)
+      .call(d3.axisLeft(y).tickValues([-40,-20,0,20,40,60]).tickFormat(d=>(d>0?"+":"")+d+"%"));
+    svg.append("text").attr("x",(m.l+W-m.r)/2).attr("y",H-8).attr("text-anchor","middle").attr("fill","#888").attr("font-size",11)
+      .text("← lower-paying countries      Country's typical pay (log)      higher-paying →");
+    svg.append("text").attr("transform","rotate(-90)").attr("x",-(m.t+H-m.b)/2).attr("y",16).attr("text-anchor","middle").attr("fill","#888").attr("font-size",11)
+      .text("AI-user vs non-user pay gap (%)");
+    // parity line
+    svg.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","#7a7a90").attr("stroke-dasharray","5 4");
+    svg.append("text").attr("x",m.l+6).attr("y",y(0)-6).attr("fill","#9a9ab0").attr("font-size",11).text("parity — AI users earn the same");
+    svg.append("text").attr("x",W-m.r).attr("y",m.t+4).attr("text-anchor","end").attr("fill","#4ade80").attr("font-size",11).text("above the line = AI users earn more ▲");
+    // pooled (Simpson's-paradox) marker
+    const pooledG=svg.append("g");
+    const gBub=svg.append("g"), gLab=svg.append("g");
+    const stat=d3.select("#stat2");
+    d3.select("#legend2").html(`<span><span class="sw" style="background:#3a9d8e"></span>higher-income</span> &nbsp; <span><span class="sw" style="background:#cf7a3a"></span>lower-income</span> &nbsp;·&nbsp; size = #devs`);
+
+    let curYear=yrs[0], playing=false, timer=null;
+    function render(year, animate){
+      curYear=year;
+      const dur=animate?900:0;
+      wm.text(year);
+      d3.selectAll("#yrBtns .yrbtn").classed("on",d=>d===year);
+      const data=CY.countries.filter(c=>c.years[year]).map(c=>({...c, d:c.years[year]}));
+      // bubbles (keyed by country for smooth tweening)
+      gBub.selectAll("circle").data(data,d=>d.country).join(
+        en=>en.append("circle").attr("cx",d=>x(d.d.pay)).attr("cy",d=>y(d.d.gap)).attr("r",0)
+              .attr("fill",d=>col(d.tier)).attr("opacity",0.82).attr("stroke","#0a0a0f").attr("stroke-width",1),
+        up=>up, ex=>ex.transition().duration(dur).attr("r",0).remove())
+        .on("mousemove",(ev,d)=>showTT(`<strong>${shortName(d.country)}</strong><div class="r"><span>Typical pay</span><span>${fmt$(d.d.pay)}</span></div><div class="r"><span>AI pay gap</span><span>${(d.d.gap>0?"+":"")+d.d.gap}%</span></div><div class="r"><span>#devs</span><span>${d.d.n.toLocaleString()}</span></div>`,ev))
+        .on("mouseleave",hideTT)
+        .transition().duration(dur).attr("cx",d=>x(d.d.pay)).attr("cy",d=>y(d.d.gap)).attr("r",d=>r(d.d.n)).attr("fill",d=>col(d.tier));
+      // labels for key countries
+      gLab.selectAll("text").data(data.filter(d=>labelSet.has(d.country)),d=>d.country).join(
+        en=>en.append("text").attr("x",d=>x(d.d.pay)).attr("y",d=>y(d.d.gap)).attr("text-anchor","middle").attr("dy","0.32em")
+              .attr("fill","#10101a").attr("font-size",10.5).attr("font-weight",700).attr("paint-order","stroke")
+              .attr("stroke","#dfe8e6").attr("stroke-width",2.5).text(d=>shortName(d.country)),
+        up=>up, ex=>ex.remove())
+        .transition().duration(dur).attr("x",d=>x(d.d.pay)).attr("y",d=>y(d.d.gap));
+      // pooled marker line
+      const pg=CY.pooled[year];
+      pooledG.selectAll("line").data([pg]).join("line").attr("x1",m.l).attr("x2",W-m.r)
+        .attr("stroke","#f87171").attr("stroke-width",1.5).attr("stroke-dasharray","2 4").attr("opacity",0.7)
+        .transition().duration(dur).attr("y1",y(pg)).attr("y2",y(pg));
+      pooledG.selectAll("text").data([pg]).join("text").attr("x",W-m.r).attr("text-anchor","end")
+        .attr("fill","#f87171").attr("font-size",10).attr("opacity",0.85).text(`global pooled ${pg>0?"+":""}${pg}% (the illusion)`)
+        .transition().duration(dur).attr("y",y(pg)+(pg<0?14:-6));
+      const above=data.filter(d=>d.d.gap>0).length;
+      stat.html(`<b>${year}</b> · ${above} of ${data.length} countries above parity (AI users earn more) · the global pooled number sits at <span class="neg">${pg}%</span> — negative, even though most countries are positive. <i>That's the geography illusion.</i>`);
+    }
+    function stop(){ playing=false; if(timer)clearInterval(timer); timer=null; d3.select("#playBtn").text("▶ Play 2023→2025"); }
+    function play(){
+      if(playing){ stop(); return; }
+      playing=true; d3.select("#playBtn").text("❚❚ Pause");
+      let i=yrs.indexOf(curYear);
+      if(i>=yrs.length-1) i=-1;            // restart if sitting on the last year
+      const tick=()=>{ i++; render(yrs[i],true); if(i>=yrs.length-1) stop(); };
+      tick();
+      timer=setInterval(tick,1400);
+    }
+    // build year buttons
+    d3.select("#yrBtns").selectAll("button").data(yrs).join("button").attr("class","yrbtn").text(d=>d)
+      .on("click",(ev,d)=>{ stop(); render(d,true); });
+    d3.select("#playBtn").on("click",play);
+    activators["s2"]=()=>{ render(yrs[0],false); setTimeout(()=>{ if(!playing) play(); },700); };
+    d3.select("#insight2").html(`<b>Simpson's Paradox — the gap is growing.</b> Watch the bubbles climb: by 2025 most countries sit <b>above parity</b> (AI users earn more), and high-income countries lead. Yet the dashed red <i>global pooled</i> line stays <b>negative</b> — because AI-eager developers cluster in lower-income economies that earn less in USD. Pool the world together and AI looks like a penalty; split by country and it's a premium almost everywhere.`);
+  })();
+
+  /* ---------- SCENE 3: catch-up scatter ---------- */
+  (function(){
+    const W=980,H=440,m={t:20,r:30,b:50,l:60};
+    const svg=d3.select("#chart3").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const x=d3.scaleLinear().domain([0,160000]).range([m.l,W-m.r]).nice();
+    const y=d3.scaleLinear().domain([30,65]).range([H-m.b,m.t]).nice();
+    const r=d3.scaleSqrt().domain([0,d3.max(country,d=>d.n)]).range([3,26]);
+    svg.append("g").attr("class","gridline").selectAll("line").data(y.ticks(6)).join("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",d=>y(d)).attr("y2",d=>y(d));
+    svg.append("g").attr("class","axis").attr("transform",`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(6).tickFormat(fmtK));
+    svg.append("g").attr("class","axis").attr("transform",`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6).tickFormat(d=>d+"%"));
+    svg.append("text").attr("x",(W)/2).attr("y",H-8).attr("text-anchor","middle").attr("fill","#888").attr("font-size",12).text("National median developer salary (USD)");
+    svg.append("text").attr("transform","rotate(-90)").attr("x",-(H/2)).attr("y",16).attr("text-anchor","middle").attr("fill","#888").attr("font-size",12).text("AI daily adoption %");
+    // trend line (least squares)
+    const n=country.length, sx=d3.sum(country,d=>d.median_comp), sy=d3.sum(country,d=>d.ai_daily_pct);
+    const sxy=d3.sum(country,d=>d.median_comp*d.ai_daily_pct), sxx=d3.sum(country,d=>d.median_comp*d.median_comp);
+    const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx), intc=(sy-slope*sx)/n;
+    svg.append("line").attr("x1",x(0)).attr("y1",y(intc)).attr("x2",x(160000)).attr("y2",y(intc+slope*160000))
+      .attr("stroke","#fb923c").attr("stroke-width",2).attr("stroke-dasharray","6 4").attr("opacity",0.7);
+    const label=new Set(["United States of America","Ukraine","Spain","Germany","India","Poland"]);
+    activators["s3"]=()=>{
+      svg.selectAll("circle").data(country).join("circle").attr("cx",d=>x(d.median_comp)).attr("cy",d=>y(d.ai_daily_pct))
+        .attr("r",0).attr("fill","#a78bfa").attr("opacity",0.7).attr("stroke","#0a0a0f")
+        .on("mousemove",(ev,d)=>showTT(`<strong>${d.country}</strong><div class="r"><span>Median pay</span><span>${fmt$(d.median_comp)}</span></div><div class="r"><span>AI daily</span><span>${d.ai_daily_pct}%</span></div><div class="r"><span>n</span><span>${d.n}</span></div>`,ev))
+        .on("mouseleave",hideTT)
+        .transition().duration(700).delay((d,i)=>i*15).attr("r",d=>r(d.n));
+      svg.selectAll(".clab").data(country.filter(d=>label.has(d.country))).join("text").attr("class","clab")
+        .attr("x",d=>x(d.median_comp)).attr("y",d=>y(d.ai_daily_pct)-r(d.n)-4).attr("text-anchor","middle")
+        .attr("fill","#ddd").attr("font-size",11).attr("opacity",0).text(d=>d.country==="United States of America"?"USA":d.country)
+        .transition().delay(600).duration(400).attr("opacity",1);
+    };
+    d3.select("#insight3").html(`<b>The richest markets are the most cautious.</b> The downward trend (orange) shows adoption falling as national income rises. This adoption-vs-income gradient is exactly what manufactures the global salary illusion of Scene 2.`);
+  })();
+
+  /* ---------- SCENE 4: exposure paradox — beeswarm "scissors" ---------- */
+  (function(){
+    const W=980,H=440,m={t:40,r:60,b:54,l:60};
+    const svg=d3.select("#chart4").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const groups=["Feel threatened","Not threatened","Unsure"];   // x categories
+    const pts=exposure.points, pay=exposure.pay_by_threat;
+    const threatByGroup={}; pay.forEach(p=>threatByGroup[p.threat]=p);
+    const x=d3.scalePoint().domain(groups).range([m.l+90,W-m.r-90]).padding(0.5);
+    const y=d3.scaleLinear().domain([0,300000]).range([H-m.b,m.t]);   // salary
+    svg.append("g").attr("class","axis").attr("transform",`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6).tickFormat(fmtK));
+    svg.append("text").attr("transform","rotate(-90)").attr("x",-H/2).attr("y",16).attr("text-anchor","middle").attr("fill","#888").attr("font-size",12).text("Annual salary (USA, USD)");
+    // beeswarm x-offset within each group (dot-density jitter)
+    function swarm(vals){
+      const r=3, simN=[]; const sorted=[...vals].sort((a,b)=>a-b);
+      const placed=[];
+      return sorted.map(v=>{
+        const cy=y(v); let side=0, step=0;
+        // simple collision: walk outward until no overlap with same-row dots
+        let ox=0, ok=false, tries=0;
+        while(!ok && tries<60){
+          ok=placed.every(p=>Math.abs(p.cy-cy)>2*r || Math.abs(p.ox-ox)>2*r);
+          if(ok) break;
+          step++; side=-side|| (step%2?1:-1); ox=(step%2?1:-1)*Math.ceil(step/2)*(2*r); tries++;
+        }
+        placed.push({cy,ox}); return {v,cy,ox};
+      });
+    }
+    const yThreat=d3.scaleLinear().domain([0,25]).range([H-m.b,m.t]);  // secondary for the climbing curve
+    activators["s4"]=()=>{
+      groups.forEach((grp,gi)=>{
+        const cx=x(grp), vals=pts[grp]||[], med=threatByGroup[grp].median_comp;
+        const sw=swarm(vals);
+        const g=svg.append("g");
+        g.selectAll("circle").data(sw).join("circle")
+          .attr("cx",cx).attr("cy",d=>d.cy).attr("r",0)
+          .attr("fill",grp==="Feel threatened"?"#f87171":grp==="Not threatened"?"#4ade80":"#9ca3af").attr("opacity",0.55)
+          .transition().duration(600).delay((d,i)=>gi*120+i*1.2).attr("cx",d=>cx+d.ox).attr("r",2.6);
+        // median bar (shows the flatness across groups)
+        g.append("line").attr("x1",cx-46).attr("x2",cx+46).attr("y1",y(med)).attr("y2",y(med))
+          .attr("stroke","#fff").attr("stroke-width",2.5).attr("opacity",0).transition().delay(700).attr("opacity",1);
+        g.append("text").attr("x",cx).attr("y",y(med)-8).attr("text-anchor","middle").attr("fill","#fff").attr("font-size",12).attr("font-weight",700)
+          .attr("opacity",0).text(fmt$(med)).transition().delay(800).attr("opacity",1);
+        // group label + threat %
+        g.append("text").attr("x",cx).attr("y",H-m.b+18).attr("text-anchor","middle").attr("fill","#ccc").attr("font-size",12).text(grp);
+        g.append("text").attr("x",cx).attr("y",H-m.b+34).attr("text-anchor","middle").attr("fill","#f87171").attr("font-size",11)
+          .text(`${threatByGroup[grp].n.toLocaleString()} devs`);
+      });
+      // dashed line connecting the three medians → visibly flat ("one blade of the scissors")
+      const mline=d3.line().x(d=>x(d.threat)).y(d=>y(d.median_comp));
+      svg.append("path").datum(pay).attr("fill","none").attr("stroke","#fff").attr("stroke-width",1.5).attr("stroke-dasharray","5 4")
+        .attr("opacity",0).attr("d",mline).transition().delay(900).attr("opacity",0.6);
+      svg.append("text").attr("x",W-m.r-80).attr("y",y(150000)-14).attr("fill","#fff").attr("font-size",11).attr("font-style","italic")
+        .attr("opacity",0).text("medians ≈ flat").transition().delay(1100).attr("opacity",0.8);
+    };
+    d3.select("#insight4").html(`<b>Fear rises with exposure — pay doesn't budge.</b> Each dot is a US developer's salary. The three clouds (and their white medians) sit at the <b>same height</b> whether or not someone feels threatened — yet threat perception climbs from 10% (non-users) to 21% (daily agent users). The anxiety is psychological, not financial.`);
+  })();
+
+  /* ---------- SCENE 5: trust boundary — delegation spectrum ---------- */
+  (function(){
+    const W=980,H=440,m={t:50,r:40,b:70,l:40};
+    const svg=d3.select("#chart5").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const x=d3.scaleLinear().domain([0,62]).range([m.l+40,W-m.r-40]);   // "% doing this with AI now"
+    const axisY=H-m.b;
+    // gradient strip background: left = human-only, right = AI-heavy
+    const defs=svg.append("defs"); const grad=defs.append("linearGradient").attr("id","delg").attr("x1","0").attr("x2","1");
+    grad.append("stop").attr("offset","0").attr("stop-color","#f87171").attr("stop-opacity",.18);
+    grad.append("stop").attr("offset","1").attr("stop-color","#4ade80").attr("stop-opacity",.18);
+    svg.append("rect").attr("x",x(0)).attr("y",axisY-12).attr("width",x(62)-x(0)).attr("height",24).attr("rx",12).attr("fill","url(#delg)");
+    svg.append("g").attr("class","axis").attr("transform",`translate(0,${axisY+22})`).call(d3.axisBottom(x).ticks(6).tickFormat(d=>d+"%"));
+    svg.append("text").attr("x",x(0)).attr("y",axisY+58).attr("fill","#f87171").attr("font-size",12).text("◀ kept human");
+    svg.append("text").attr("x",x(62)).attr("y",axisY+58).attr("text-anchor","end").attr("fill","#4ade80").attr("font-size",12).text("delegated to AI ▶");
+    svg.append("text").attr("x",W/2).attr("y",20).attr("text-anchor","middle").attr("fill","#fff").attr("font-size",13).attr("font-weight",600).text("Share of developers already doing each task with AI");
+    // semantic cliff: exploration tasks (>=30% now) vs production/judgment tasks (<30%)
+    const sorted=[...tasks].sort((a,b)=>b.now-a.now);
+    const THR=30;
+    const cliffX=x(THR);
+    // vertical label-stagger to avoid overlap
+    activators["s5"]=()=>{
+      // cliff divider
+      svg.append("line").attr("x1",cliffX).attr("x2",cliffX).attr("y1",m.t+6).attr("y2",axisY+10)
+        .attr("stroke","#fff").attr("stroke-dasharray","4 4").attr("opacity",0).transition().delay(700).attr("opacity",0.45);
+      svg.append("text").attr("x",cliffX).attr("y",m.t-4).attr("text-anchor","middle").attr("fill","#fff").attr("font-size",11).attr("font-style","italic")
+        .attr("opacity",0).text("the trust cliff").transition().delay(800).attr("opacity",0.85);
+      sorted.forEach((d,i)=>{
+        const cx=x(d.now), cy=axisY, lift=(i%2?-1:1)*(28+((i*23)%70));
+        const expl=d.now>=THR;
+        const col=expl?"#4ade80":"#f87171";
+        const g=svg.append("g").attr("opacity",0);
+        // connector from dot to label
+        g.append("line").attr("x1",cx).attr("x2",cx).attr("y1",cy).attr("y2",cy+lift).attr("stroke","#333");
+        g.append("circle").attr("cx",cx).attr("cy",cy).attr("r",0).attr("fill",col).attr("stroke","#0a0a0f")
+          .on("mousemove",ev=>showTT(`<strong>${d.task}</strong><div class="r"><span>AI now</span><span>${d.now}%</span></div><div class="r"><span>"mostly AI"</span><span>${d.mostly}%</span></div><div class="r"><span>won't use</span><span>${d.refused}%</span></div>`,ev)).on("mouseleave",hideTT)
+          .transition().duration(500).delay(i*55).attr("r",Math.max(5,Math.sqrt(d.n)/22));
+        g.append("text").attr("x",cx).attr("y",cy+lift+(lift<0?-2:11)).attr("text-anchor","middle").attr("fill","#cfcfe0").attr("font-size",10.5)
+          .text(d.task.length>22?d.task.slice(0,21)+"…":d.task);
+        g.append("text").attr("x",cx).attr("y",cy+lift+(lift<0?-15:24)).attr("text-anchor","middle").attr("fill",col).attr("font-size",10).attr("font-weight",600)
+          .text(d.now+"%");
+        g.transition().duration(400).delay(i*55).attr("opacity",1);
+      });
+    };
+    d3.select("#legend5").html(`<span style="color:#4ade80">● exploration (search, write, learn, debug)</span> &nbsp; <span style="color:#f87171">● production / judgment (commit, plan, deploy)</span> &nbsp;·&nbsp; dot size = sample`);
+    d3.select("#insight5").html(`<b>The keyboard, never the deploy button.</b> Tasks split into two clusters with a visible gap — "the trust cliff." Exploration (search 59%, writing 47%) is delegated freely; production work (deploy 10%, commit/review 20%) faces 50–65% outright refusal. Only 4% trust AI on truly complex tasks.`);
+  })();
+
+  /* ---------- SCENE 6: atrophy vs pay — mirror / diverging area ---------- */
+  (function(){
+    const W=980,H=440,m={t:30,r:120,b:30,l:60};
+    const svg=d3.select("#chart6").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const buckets=atrophy.map(d=>d.bucket);
+    const premByBucket={}; premium.usa_by_exp.forEach(d=>premByBucket[d.bucket]=d.premium);
+    const data=atrophy.map(d=>({bucket:d.bucket, atrophy:d.atrophy, prem:premByBucket[d.bucket]??null}));
+    const x=d3.scalePoint().domain(buckets).range([m.l,W-m.r]).padding(0.4);
+    const mid=(m.t+(H-m.b))/2;
+    const yUp=d3.scaleLinear().domain([0,40]).range([mid-8,m.t]);     // atrophy upward
+    const yDn=d3.scaleLinear().domain([0,30]).range([mid+8,H-m.b]);   // premium downward
+    // center axis
+    svg.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",mid).attr("y2",mid).attr("stroke","#555");
+    svg.selectAll(".xt").data(buckets).join("text").attr("class","xt").attr("x",d=>x(d)).attr("y",mid+4).attr("dy","0.7em")
+      .attr("text-anchor","middle").attr("fill","#888").attr("font-size",11).text(d=>d);
+    svg.append("text").attr("x",W/2).attr("y",mid-2).attr("text-anchor","middle").attr("fill","#666").attr("font-size",10).text("← junior      experience      senior →");
+    const areaUp=d3.area().x(d=>x(d.bucket)).y0(mid).y1(d=>yUp(d.atrophy)).curve(d3.curveMonotoneX);
+    const areaDn=d3.area().defined(d=>d.prem!=null).x(d=>x(d.bucket)).y0(mid).y1(d=>yDn(d.prem)).curve(d3.curveMonotoneX);
+    activators["s6"]=()=>{
+      // top: skill-atrophy fear (shrinks with experience)
+      const up=svg.append("path").datum(data).attr("fill","#f87171").attr("opacity",0).attr("d",areaUp);
+      up.transition().duration(800).attr("opacity",0.8);
+      // bottom: AI salary premium (positive at every level)
+      const dn=svg.append("path").datum(data).attr("fill","#4ade80").attr("opacity",0).attr("d",areaDn);
+      dn.transition().duration(800).delay(300).attr("opacity",0.75);
+      data.forEach((d,i)=>{
+        svg.append("circle").attr("cx",x(d.bucket)).attr("cy",yUp(d.atrophy)).attr("r",0).attr("fill","#fff")
+          .on("mousemove",ev=>showTT(`<strong>${d.bucket} yr</strong><div class="r"><span>feel skills eroding</span><span>${d.atrophy}%</span></div>`,ev)).on("mouseleave",hideTT)
+          .transition().delay(i*70).attr("r",3.5);
+        if(d.prem!=null) svg.append("circle").attr("cx",x(d.bucket)).attr("cy",yDn(d.prem)).attr("r",0).attr("fill","#fff")
+          .on("mousemove",ev=>showTT(`<strong>${d.bucket} yr (USA)</strong><div class="r"><span>AI salary premium</span><span>+${d.prem}%</span></div>`,ev)).on("mouseleave",hideTT)
+          .transition().delay(300+i*70).attr("r",3.5);
+      });
+      // end value labels
+      const a0=data[0], aN=data[data.length-1];
+      svg.append("text").attr("x",x(a0.bucket)).attr("y",yUp(a0.atrophy)-8).attr("text-anchor","middle").attr("fill","#f87171").attr("font-size",12).attr("font-weight",700).attr("opacity",0).text(a0.atrophy+"%").transition().delay(700).attr("opacity",1);
+      svg.append("text").attr("x",x(aN.bucket)).attr("y",yUp(aN.atrophy)-8).attr("text-anchor","middle").attr("fill","#f87171").attr("font-size",12).attr("font-weight",700).attr("opacity",0).text(aN.atrophy+"%").transition().delay(700).attr("opacity",1);
+      svg.append("text").attr("x",W-m.r+8).attr("y",yUp(15)).attr("fill","#f87171").attr("font-size",11.5).attr("font-weight",600).attr("opacity",0).text("fear: skills").transition().delay(800).attr("opacity",1);
+      svg.append("text").attr("x",W-m.r+8).attr("y",yUp(15)+15).attr("fill","#f87171").attr("font-size",11.5).attr("opacity",0).text("eroding").transition().delay(800).attr("opacity",0.9);
+      svg.append("text").attr("x",W-m.r+8).attr("y",yDn(15)).attr("fill","#4ade80").attr("font-size",11.5).attr("font-weight",600).attr("opacity",0).text("AI salary").transition().delay(1000).attr("opacity",1);
+      svg.append("text").attr("x",W-m.r+8).attr("y",yDn(15)+15).attr("fill","#4ade80").attr("font-size",11.5).attr("opacity",0).text("premium (USA)").transition().delay(1000).attr("opacity",0.9);
+    };
+    d3.select("#legend6").html(`<span style="color:#f87171">▲ % who feel AI is eroding their own skills</span> &nbsp;·&nbsp; <span style="color:#4ade80">▼ AI-daily salary premium (USA)</span>`);
+    d3.select("#insight6").html(`<b>The real junior risk is developmental, not financial.</b> Read it as two mirrored truths along the experience axis: juniors enjoy the <i>same</i> (even larger) AI pay premium as seniors — but they are <b>4× more likely</b> to feel AI is hollowing out their own problem-solving (35% → 8%).`);
+  })();
+
+  /* ---------- SCENE 7: adoption divide — deviation dot-plot ---------- */
+  (function(){
+    const base=divide.baseline;     // overall AI-daily mean (~47%)
+    // pick the most divergent categories from each facet so the spread reads clearly
+    const rows=[
+      ...pickFacet("industry",6,"Industry"),
+      ...pickFacet("orgsize",4,"Org size"),
+      ...pickFacet("role",6,"Role"),
+      ...pickFacet("age",4,"Age"),
+    ];
+    function pickFacet(key,k,facet){
+      return divide[key].slice().sort((a,b)=>Math.abs(b.pct-base)-Math.abs(a.pct-base)).slice(0,k)
+        .sort((a,b)=>b.pct-a.pct).map(d=>({...d,facet}));
+    }
+    const W=980,rowH=24,m={t:34,r:40,b:24,l:210},H=m.t+m.b+rows.length*rowH+30;
+    const svg=d3.select("#chart7").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const x=d3.scaleLinear().domain([12,80]).range([m.l,W-m.r]).nice();
+    const yb=d3.scaleBand().domain(rows.map((d,i)=>i)).range([m.t,H-m.b]).padding(0.32);
+    svg.append("g").attr("class","axis").attr("transform",`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(7).tickFormat(d=>d+"%"));
+    // baseline (population mean)
+    svg.append("line").attr("x1",x(base)).attr("x2",x(base)).attr("y1",m.t-6).attr("y2",H-m.b).attr("stroke","#fff").attr("stroke-dasharray","4 4").attr("opacity",0.5);
+    svg.append("text").attr("x",x(base)).attr("y",m.t-12).attr("text-anchor","middle").attr("fill","#fff").attr("font-size",11).text(`all developers ${base}%`);
+    svg.append("text").attr("x",m.l).attr("y",m.t-12).attr("fill","#f87171").attr("font-size",10.5).text("◀ AI-cautious");
+    svg.append("text").attr("x",W-m.r).attr("y",m.t-12).attr("text-anchor","end").attr("fill","#4ade80").attr("font-size",10.5).text("AI-first ▶");
+    let lastFacet="";
+    activators["s7"]=()=>{
+      rows.forEach((d,i)=>{
+        const yp=yb(i)+yb.bandwidth()/2, ahead=d.pct>=base, col=ahead?"#4ade80":"#f87171";
+        const g=svg.append("g").attr("opacity",0);
+        // facet tag when it changes
+        if(d.facet!==lastFacet){ g.append("text").attr("x",12).attr("y",yp).attr("dy","0.32em").attr("fill","#6b6b8a").attr("font-size",10).attr("font-weight",700).text(d.facet.toUpperCase()); lastFacet=d.facet; }
+        g.append("text").attr("x",m.l-12).attr("y",yp).attr("dy","0.32em").attr("text-anchor","end").attr("fill","#cfcfe0").attr("font-size",11).text(d.label.length>24?d.label.slice(0,23)+"…":d.label);
+        // stem from baseline to dot
+        g.append("line").attr("x1",x(base)).attr("x2",x(base)).attr("y1",yp).attr("y2",yp).attr("stroke",col).attr("stroke-width",2).attr("opacity",0.6)
+          .transition().duration(550).delay(i*45).attr("x2",x(d.pct));
+        g.append("circle").attr("cx",x(base)).attr("cy",yp).attr("r",5).attr("fill",col).attr("stroke","#0a0a0f")
+          .on("mousemove",ev=>showTT(`<strong>${d.label}</strong><div class="r"><span>AI daily</span><span>${d.pct}%</span></div><div class="r"><span>vs all devs</span><span>${(d.pct-base>=0?"+":"")+(d.pct-base).toFixed(1)}pp</span></div><div class="r"><span>n</span><span>${d.n}</span></div>`,ev)).on("mouseleave",hideTT)
+          .transition().duration(550).delay(i*45).attr("cx",x(d.pct));
+        g.append("text").attr("x",x(d.pct)).attr("y",yp).attr("dy","0.32em").attr("dx",ahead?9:-9).attr("text-anchor",ahead?"start":"end")
+          .attr("fill",col).attr("font-size",10.5).attr("font-weight",600).attr("opacity",0).text(d.pct+"%")
+          .transition().delay(i*45+350).attr("opacity",1);
+        g.transition().duration(300).delay(i*45).attr("opacity",1);
+      });
+    };
+    d3.select("#insight7").html(`<b>The divide is structural, not individual.</b> Distance from the dashed line (all developers, ${base}%) shows who leans in vs holds back: Fintech & AI/ML engineers & startups pull right; Government, big corp, academia & the 55+ pull left. Those who feel AI-threatened are also 2.4× more likely to be eyeing a career change.`);
+  })();
+
+  /* ---------- SCENE 8: explore bubbles ---------- */
+  (function(){
+    const data=groups.groups.filter(d=>d.median_comp!=null && d.threat!=null);
+    const dims={
+      median_comp:{label:"Median salary",fmt:fmtK,acc:d=>d.median_comp},
+      ai_daily:{label:"AI daily %",fmt:d=>d+"%",acc:d=>d.ai_daily},
+      threat:{label:"Threat %",fmt:d=>d+"%",acc:d=>d.threat},
+      n:{label:"Group size (n)",fmt:d=>d,acc:d=>d.n},
+    };
+    const sels={x:"median_comp",y:"ai_daily",c:"threat"};
+    Object.entries(dims).forEach(([k,v])=>{
+      ["x","y","c"].forEach(s=>d3.select("#"+s+"Sel").append("option").attr("value",k).text(v.label));
+    });
+    d3.select("#xSel").property("value",sels.x); d3.select("#ySel").property("value",sels.y); d3.select("#cSel").property("value",sels.c);
+    const W=980,H=480,m={t:20,r:30,b:50,l:64};
+    const svg=d3.select("#chart8").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+    const gx=svg.append("g").attr("class","axis").attr("transform",`translate(0,${H-m.b})`);
+    const gy=svg.append("g").attr("class","axis").attr("transform",`translate(${m.l},0)`);
+    const xlab=svg.append("text").attr("x",W/2).attr("y",H-8).attr("text-anchor","middle").attr("fill","#888").attr("font-size",12);
+    const ylab=svg.append("text").attr("transform","rotate(-90)").attr("x",-H/2).attr("y",16).attr("text-anchor","middle").attr("fill","#888").attr("font-size",12);
+    const r=d3.scaleSqrt().domain([0,d3.max(data,d=>d.n)]).range([4,30]);
+    const x=d3.scaleLinear(), y=d3.scaleLinear();
+    function update(animate){
+      const xa=dims[sels.x],ya=dims[sels.y],ca=dims[sels.c];
+      x.domain([0,d3.max(data,xa.acc)*1.05]).range([m.l,W-m.r]).nice();
+      y.domain([0,d3.max(data,ya.acc)*1.05]).range([H-m.b,m.t]).nice();
+      const col=d3.scaleSequential(d3.interpolateViridis).domain(d3.extent(data,ca.acc));
+      gx.transition().duration(animate?700:0).call(d3.axisBottom(x).ticks(6).tickFormat(xa.fmt));
+      gy.transition().duration(animate?700:0).call(d3.axisLeft(y).ticks(6).tickFormat(ya.fmt));
+      xlab.text(xa.label); ylab.text(ya.label);
+      svg.selectAll("circle.bub").data(data,d=>d.role+d.exp).join(
+        en=>en.append("circle").attr("class","bub").attr("cx",d=>x(xa.acc(d))).attr("cy",d=>y(ya.acc(d))).attr("r",0).attr("opacity",0.72).attr("stroke","#0a0a0f"),
+        up=>up, ex=>ex.remove())
+        .on("mousemove",(ev,d)=>showTT(`<strong>${d.role}</strong><div class="r"><span>Experience</span><span>${d.exp} yr</span></div><div class="r"><span>Median pay</span><span>${fmt$(d.median_comp)}</span></div><div class="r"><span>AI daily</span><span>${d.ai_daily}%</span></div><div class="r"><span>Threat</span><span>${d.threat}%</span></div><div class="r"><span>n</span><span>${d.n}</span></div>`,ev))
+        .on("mouseleave",hideTT)
+        .transition().duration(animate?700:0).attr("cx",d=>x(xa.acc(d))).attr("cy",d=>y(ya.acc(d))).attr("r",d=>r(d.n)).attr("fill",d=>col(ca.acc(d)));
+    }
+    ["x","y","c"].forEach(s=>d3.select("#"+s+"Sel").on("change",function(){ sels[s]=this.value; update(true); }));
+    activators["s8"]=()=>update(true);
+  })();
+
+  // all activators ready → start observing (fires immediately for scenes already in view, e.g. Scene 0)
+  ["s0","s1","s2","s3","s4","s5","s6","s7","s8"].forEach(id=>obs.observe(document.getElementById(id)));
+
+});
+</script>
+</body>
+</html>

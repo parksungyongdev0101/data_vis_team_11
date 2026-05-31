@@ -1,0 +1,39 @@
+# --- macOS junk ---
+.DS_Store
+**/.DS_Store
+
+# --- 원본 설문 데이터 (447MB) ---
+# viz/data/*.json 결과물만 공유. 원본은 scripts/로 재생성 (README 참고).
+/data/
+!/data/DATA_PROFILE.md
+
+# --- 공유 범위 밖: q2.html / salary.html 만 공유 (로컬엔 남기되 공유 제외) ---
+# index.html(Q3 대시보드)과 standalone(데이터 내장·재현 불가)은 공유하지 않음
+viz/index.html
+viz/standalone/
+
+# --- 구버전/프로토타입 (로컬엔 남기되 공유 제외) ---
+Q2_bubble_anim.html
+Q2_bubble_gap_anim.html
+Q2_geo_years.json
+Q2_geo_gap_years.json
+viz/poster.html
+viz/data/viz1_language_gap.json
+viz/data/viz1_language_growth.json
+viz/data/viz1_so_yearly.json
+viz/data/viz2_ai_tasks.json
+viz/data/viz3_role_positioning.json
+scripts/preprocess.py
+scripts/gen_q2_json.py
+
+# --- 대용량 참고 자산 (로컬엔 남기되 공유 제외) ---
+storyboard.jpeg
+
+# --- 빌드 캐시 ---
+scripts/.cache/
+
+# --- Claude / 제안서·요구사항 문서 (공유 불필요) ---
+.claude/
+ProjectProposal.pdf
+ProjectProposal.txt
+ProjectRequirements.md
