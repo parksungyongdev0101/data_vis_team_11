@@ -2,4 +2,4 @@
 .playwright-mcp/
 
 # Raw datasets are too large for GitHub — kept locally only
-data/
+/data/
