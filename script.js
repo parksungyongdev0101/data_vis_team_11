@@ -174,7 +174,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   const allPay=[], allN=[], allGap=[];
   GAP.forEach(c=>YEARS.forEach(yy=>{ allPay.push(c.years[yy].pay); allN.push(c.years[yy].n); allGap.push(c.years[yy].gap); }));
 
-  const gx = d3.scaleLog().domain([5000,160000]).range([0,iw]).clamp(true);
+  const gx = d3.scaleLog().domain([10000,160000]).range([0,iw]).clamp(true);
   const gy = d3.scaleLinear().domain([-45,60]).range([ih,0]);
   const gr = d3.scaleSqrt().domain([0,d3.max(allN)]).range([3,30]);
 
@@ -187,7 +187,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .text(YEARS[0]);
 
   // x gridlines at tick values
-  const gxTicks = [5000,10000,30000,80000,160000];
+  const gxTicks = [10000,20000,40000,80000,160000];
   gapLayer.append("g").attr("class","grid")
     .selectAll("line").data(gxTicks).join("line")
     .attr("x1",d=>gx(d)).attr("x2",d=>gx(d)).attr("y1",0).attr("y2",ih);
@@ -207,7 +207,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .attr("x", iw/2).attr("y", ih + 42)
     .attr("text-anchor","middle").attr("fill","var(--muted)")
     .attr("font-size",12.5).attr("font-weight",600)
-    .text("← lower-paying countries     Country's typical pay (log)     higher-paying →");
+    .text("Country's typical pay (log scale)");
   gapLayer.append("text")
     .attr("transform","rotate(-90)")
     .attr("x", -ih/2).attr("y", -46)
@@ -224,6 +224,12 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .attr("x",4).attr("y",gy(0)-7)
     .attr("fill","#8b97ac").attr("font-size",11.5).attr("font-weight",600)
     .text("parity — AI users earn the same");
+
+  // top-right annotation: what "up" means
+  gapLayer.append("text")
+    .attr("x", iw).attr("y", 13).attr("text-anchor","end")
+    .attr("fill","#0f766e").attr("font-size",12.5).attr("font-weight",800)
+    .text("▲ above the line = AI users earn more");
 
   // bubbles (start at 2023)
   const bub = gapLayer.append("g").selectAll("circle.pay-bub")
@@ -287,102 +293,10 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   }
 
   // ======================================================================
-  // VIEW B — Catch-up (static scatter, 2025) — hidden by default
-  // ======================================================================
-  const catchLayer = root.append("g").attr("class","pay-layer").style("display","none");
-
-  const cx = d3.scaleLog().domain([15000,160000]).range([0,iw]).clamp(true);
-  const cy = d3.scaleLinear().domain([30,65]).range([ih,0]);
-  const cr = d3.scaleSqrt().domain([0,d3.max(CATCH,d=>d.n)]).range([4,28]);
-
-  // y gridlines
-  catchLayer.append("g").attr("class","grid")
-    .selectAll("line").data(cy.ticks(6)).join("line")
-    .attr("x1",0).attr("x2",iw).attr("y1",d=>cy(d)).attr("y2",d=>cy(d));
-
-  const cxTicks=[15000,30000,60000,120000,160000];
-  catchLayer.append("g").attr("class","axis")
-    .attr("transform","translate(0,"+ih+")")
-    .call(d3.axisBottom(cx).tickValues(cxTicks).tickFormat(fmtK))
-    .call(g=>g.select(".domain").remove());
-  catchLayer.append("g").attr("class","axis")
-    .call(d3.axisLeft(cy).ticks(6).tickFormat(d=>d+"%"))
-    .call(g=>g.select(".domain").remove());
-
-  catchLayer.append("text")
-    .attr("x", iw/2).attr("y", ih + 42)
-    .attr("text-anchor","middle").attr("fill","var(--muted)")
-    .attr("font-size",12.5).attr("font-weight",600)
-    .text("National median developer pay (log)");
-  catchLayer.append("text")
-    .attr("transform","rotate(-90)")
-    .attr("x", -ih/2).attr("y", -46)
-    .attr("text-anchor","middle").attr("fill","var(--muted)")
-    .attr("font-size",12.5).attr("font-weight",600)
-    .text("AI-daily adoption (%)");
-
-  // least-squares trend line on (median_comp, ai_daily_pct) — drawn across the x-range
-  (function(){
-    const n=CATCH.length;
-    const sx=d3.sum(CATCH,d=>d.median_comp), sy=d3.sum(CATCH,d=>d.ai_daily_pct);
-    const sxy=d3.sum(CATCH,d=>d.median_comp*d.ai_daily_pct), sxx=d3.sum(CATCH,d=>d.median_comp*d.median_comp);
-    const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx), intc=(sy-slope*sx)/n;
-    const x0=15000, x1=160000;
-    catchLayer.append("line").attr("class","boundary-line")
-      .attr("x1",cx(x0)).attr("y1",cy(intc+slope*x0))
-      .attr("x2",cx(x1)).attr("y2",cy(intc+slope*x1))
-      .attr("stroke","#9aa6bb").attr("stroke-width",2).attr("stroke-dasharray","6 4").attr("opacity",0.85);
-    catchLayer.append("text")
-      .attr("x", cx(120000)).attr("y", cy(intc+slope*120000)-8)
-      .attr("text-anchor","end").attr("fill","#8b97ac")
-      .attr("font-size",11).attr("font-style","italic")
-      .text("more pay → less daily AI");
-  })();
-
-  // bubbles (single emphasis colour)
-  catchLayer.append("g").selectAll("circle.pay-cbub")
-    .data(CATCH).join("circle")
-    .attr("class","pay-cbub")
-    .attr("cx", d=>cx(d.median_comp))
-    .attr("cy", d=>cy(d.ai_daily_pct))
-    .attr("r",  d=>cr(d.n))
-    .attr("fill","var(--night)").attr("fill-opacity",0.55)
-    .attr("stroke","#fff").attr("stroke-width",1)
-    .style("cursor","pointer")
-    .on("mousemove",(e,d)=>showTip(e,"<b>"+shortName(d.country)+"</b><br>Pay "+fmtK(d.median_comp)+" · AI-daily "+d.ai_daily_pct+"% · N="+d.n.toLocaleString()))
-    .on("mouseleave", hideTip);
-
-  // labels for selected catch-up countries
-  const cLabelSet = new Set(["United States of America","India","Ukraine","Switzerland","Spain"]);
-  catchLayer.append("g").selectAll("text.pay-clab2")
-    .data(CATCH.filter(d=>cLabelSet.has(d.country))).join("text")
-    .attr("class","pay-clab2 label")
-    .attr("x", d=>cx(d.median_comp))
-    .attr("y", d=>cy(d.ai_daily_pct)-cr(d.n)-5)
-    .attr("text-anchor","middle")
-    .attr("font-size",11).attr("font-weight",600)
-    .attr("fill","var(--ink)")
-    .attr("paint-order","stroke").attr("stroke","#fff").attr("stroke-width",2.6)
-    .style("pointer-events","none")
-    .text(d=>shortName(d.country));
-
-  // catch-up annotation (under chart)
-  const cAnno = catchLayer.append("text")
-    .attr("x",0).attr("y", ih + 58)
-    .attr("font-size",12).attr("fill","var(--ink)");
-  cAnno.append("tspan").attr("x",0).attr("dy",0).attr("font-weight",700)
-    .text("The poorer the market, the harder developers adopt AI (India $17k→60%, USA $150k→40%).");
-  cAnno.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",700)
-    .text("Pool everyone together and the low-pay, high-adoption countries drag the average down —");
-  cAnno.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",700)
-    .text("that's the ")
-    .append("tspan").attr("fill","var(--red)").text("−62% mirage.");
-
-  // ======================================================================
   // Controls: year chips (injected into #pay-controls), play, view pills
   // ======================================================================
   // build year chips into the controls bar, between play and the view pills
-  const yrWrap = d3.select("#pay-controls").insert("span",'[data-view="gap"]')
+  const yrWrap = d3.select("#pay-controls").append("span")
     .attr("id","pay-years").attr("class","legend").style("gap","6px");
   yrWrap.selectAll("button").data(YEARS).join("button")
     .attr("class","pill pay-yr")
@@ -400,46 +314,16 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   }
   d3.select("#pay-play").on("click",()=>playing?stop():play());
 
-  // legend content (depends on active view)
+  // legend content
   const legend = d3.select("#pay-legend");
-  function setLegend(view){
-    if(view==="gap"){
-      legend.html(
-        '<span class="legend-item"><span class="swatch" style="background:'+HIGH+'"></span>Higher-income country</span>'+
-        '<span class="legend-item"><span class="swatch" style="background:'+LOW+'"></span>Lower-income country</span>'+
-        '<span class="legend-item" style="color:var(--muted)">above the line = AI users earn more · size = #devs</span>'+
-        '<span class="legend-item" style="color:var(--muted)">"AI user" = uses AI tools (any frequency)</span>'
-      );
-    } else {
-      legend.html(
-        '<span class="legend-item"><span class="swatch" style="background:var(--night)"></span>Country (2025)</span>'+
-        '<span class="legend-item" style="color:var(--muted)">size = #devs · dashed line = inverse trend</span>'+
-        '<span class="legend-item" style="color:var(--muted)">"AI-daily" = uses AI daily (a different SO question)</span>'
-      );
-    }
+  function setLegend(){
+    legend.html(
+      '<span class="legend-item"><span class="swatch" style="background:'+HIGH+'"></span>Higher-income country</span>'+
+      '<span class="legend-item"><span class="swatch" style="background:'+LOW+'"></span>Lower-income country</span>'+
+      '<span class="legend-item" style="color:var(--muted)">size = #developers</span>'+
+      '<span class="legend-item" style="color:var(--muted)">"AI user" = uses AI tools (any frequency)</span>'
+    );
   }
-
-  // view switching via the two data-view pills
-  function setView(view){
-    const isGap = view==="gap";
-    d3.selectAll('#pay-controls .pill[data-view]').classed("active", function(){
-      return this.getAttribute("data-view")===view;
-    });
-    // play + year chips only make sense for the animated gap view
-    d3.select("#pay-play").style("display", isGap?null:"none");
-    yrWrap.style("display", isGap?null:"none");
-    if(!isGap) stop();
-    d3.select("#pay-title").text(isGap
-      ? "AI pay gap by country · 2023 → 2025"
-      : "Adoption vs. pay · why the average lies · 2025");
-    gapLayer.style("display", isGap?null:"none");
-    catchLayer.style("display", isGap?"none":null);
-    if(isGap){ renderGap(gapIdx, false); }
-    setLegend(view);
-  }
-  d3.selectAll('#pay-controls .pill[data-view]').on("click", function(){
-    setView(this.getAttribute("data-view"));
-  });
 
   // initial render: gap view, year 2023, no animation
   renderGap(0, false);
@@ -691,15 +575,15 @@ const clusterSvg = d3.select("#cluster-bubbles");
 const clusterW = 860, clusterH = 620;
 const clusterRadius = d3.scaleSqrt()
   .domain(d3.extent(clusterSubs, d => d.count))
-  .range([16, 62]);
+  .range([12, 48]);
 const clusterGroup = clusterSvg.append("g");
 const clusterLayout = {
   problem: { x: 420, y: 205, labelX: 300, labelY: 92 },
-  design: { x: 622, y: 236, labelX: 690, labelY: 176 },
+  design: { x: 622, y: 236, labelX: 690, labelY: 138 },
   comm: { x: 640, y: 382, labelX: 720, labelY: 438 },
   domain: { x: 512, y: 468, labelX: 556, labelY: 558 },
   fund: { x: 306, y: 456, labelX: 210, labelY: 558 },
-  ai: { x: 202, y: 362, labelX: 118, labelY: 405 },
+  ai: { x: 202, y: 362, labelX: 56, labelY: 396 },
   adapt: { x: 230, y: 220, labelX: 120, labelY: 178 }
 };
 clusterCats.forEach((cat, i) => {
@@ -744,7 +628,7 @@ function clusterHull(cat) {
   }
   const x = d3.mean(nodes, d => d.x);
   const y = d3.mean(nodes, d => d.y);
-  const r = d3.max(nodes, d => Math.hypot(d.x - x, d.y - y) + d.r + 22);
+  const r = d3.max(nodes, d => Math.hypot(d.x - x, d.y - y) + d.r + 12);
   return { ...cat, x, y, r };
 }
 const clusterHulls = clusterHullLayer.selectAll(".cluster-hull")
@@ -771,10 +655,10 @@ clusterSvg.append("g")
   .style("fill", d => d.color)
   .text(d => d.name);
 const clusterSimulation = d3.forceSimulation(clusterNodes)
-  .force("charge", d3.forceManyBody().strength(5))
-  .force("collide", d3.forceCollide(d => d.r + 6))
-  .force("x", d3.forceX(d => clusterCatById[d.cat]?.anchorX || clusterW / 2).strength(.18))
-  .force("y", d3.forceY(d => clusterCatById[d.cat]?.anchorY || clusterH / 2).strength(.18))
+  .force("charge", d3.forceManyBody().strength(-28))
+  .force("collide", d3.forceCollide(d => d.r + 9))
+  .force("x", d3.forceX(d => clusterCatById[d.cat]?.anchorX || clusterW / 2).strength(.22))
+  .force("y", d3.forceY(d => clusterCatById[d.cat]?.anchorY || clusterH / 2).strength(.22))
   .on("tick", () => {
     clusterHulls
       .each(function(d) {
@@ -906,7 +790,7 @@ document.querySelectorAll("#cluster-controls .pill").forEach(button => {
     renderClusters();
   });
 });
-document.getElementById("cluster-legend").innerHTML = clusterCats.map(cat => `<span class="legend-item"><i class="swatch" style="background:${cat.color}"></i>${cat.name}</span>`).join("");
+
 
 // Scene 5: Integrated skill redraft conclusion.
 const maxSkill = {
@@ -1063,10 +947,6 @@ renderRedraft();
       {
         html: '<div class="micro"><b>Watch the gap widen.</b> 2023 → 2025, AI users pull ahead of non-users in most countries.</div>',
         fire: () => click("#pay-play"),
-      },
-      {
-        html: '<div class="micro"><b>Adoption is catching up from below.</b> Lower-income markets now show the highest daily-AI use.</div>',
-        fire: () => click('#pay [data-view="catch"]'),
       },
     ],
     verify: [
