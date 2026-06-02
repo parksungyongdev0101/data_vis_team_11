@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Where do developers go in the AI era?</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="sohyoeun/so_devs.js"></script>
+  <script src="sohyoeun/data/aiopen_clusters.js"></script>
+  <style>
+    :root {
+      --paper: #ffffff;
+      --ink: #050505;
+      --muted: #5d666d;
+      --line: #151515;
+      --panel: #ffffff;
+      --night: #00433d;
+      --blue: #8bc7df;
+      --green: #2ec866;
+      --red: #c24136;
+      --gold: #ffd66e;
+      --violet: #cfc2ff;
+      --cyan: #0e7490;
+      --mint: #efffe7;
+      --peach: #ffc59d;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.4;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 56px;
+      padding: 0 24px;
+      border-bottom: 2px solid var(--line);
+      background: rgba(255, 255, 255, .92);
+      backdrop-filter: blur(14px);
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .brand-mark {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      background: var(--green);
+    }
+    .nav { display: flex; gap: 4px; }
+    .nav a {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 12px;
+      border-radius: 999px;
+      color: #445066;
+      font-size: 12px;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .nav a.active { color: var(--ink); background: var(--green); }
+    .hero {
+      min-height: calc(100vh - 56px);
+      position: relative;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      border-left: 2px solid var(--line);
+      border-right: 2px solid var(--line);
+      border-bottom: 2px solid var(--line);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(21, 21, 21, .18) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(21, 21, 21, .18) 1px, transparent 1px);
+      background-size: 240px 132px;
+    }
+    .hero-inner {
+      position: relative;
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 76px 0 64px;
+    }
+    .kicker {
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      max-width: 960px;
+      margin: 0;
+      font-size: clamp(54px, 9vw, 124px);
+      line-height: .94;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+    .subtitle {
+      max-width: 700px;
+      margin-top: 22px;
+      color: #334155;
+      font-size: 20px;
+    }
+    .persona-panel {
+      max-width: 720px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: center;
+      margin-top: 28px;
+      padding: 12px;
+      border: 2px solid var(--line);
+      border-radius: 0;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: none;
+    }
+    .persona-panel span {
+      color: #475569;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+    button {
+      min-height: 40px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    button:last-child { border-right: 0; }
+    button.active { color: white; background: var(--night); }
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+    .summary {
+      margin: 0 calc(50% - 50vw);
+      padding: 72px max(24px, calc((100vw - 1180px) / 2)) 92px;
+      background: var(--night);
+      color: #d9ffd2;
+    }
+    .summary h2 {
+      margin: 0;
+      font-size: clamp(48px, 7vw, 96px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .stat {
+      min-height: 280px;
+      padding: 30px;
+      background: var(--mint);
+      color: var(--night);
+      font-size: clamp(22px, 2vw, 32px);
+      line-height: 1.25;
+    }
+    .stat strong { color: var(--night); }
+    .stat.wide {
+      grid-column: span 2;
+      min-height: 190px;
+    }
+    .scene {
+      display: grid;
+      grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+      gap: 32px;
+      min-height: 92vh;
+      padding: 58px 0;
+      border-left: 2px solid var(--line);
+      border-right: 2px solid var(--line);
+      border-bottom: 2px solid var(--line);
+    }
+    .prompt {
+      position: sticky;
+      top: 84px;
+      align-self: start;
+    }
+    .scene-num {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h2 {
+      margin: 8px 0 0;
+      font-size: clamp(28px, 4vw, 50px);
+      line-height: .98;
+      letter-spacing: 0;
+    }
+    .micro {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-left: 5px solid var(--gold);
+      border-radius: 4px;
+      background: #fffaf0;
+      color: #3d3526;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .viz-card {
+      min-width: 0;
+      border: 2px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      box-shadow: none;
+      overflow: hidden;
+    }
+    .viz-head {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 16px;
+      border-bottom: 2px solid var(--line);
+      background: #fbfcfe;
+    }
+    .viz-title {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 12px;
+      background: white;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .pill.active { background: var(--night); color: white; border-color: var(--night); }
+    .viz-body { padding: 16px; }
+    .two-up {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .three-up {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .small-panel {
+      border: 1px solid #e6ebf2;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfe;
+      min-width: 0;
+    }
+    .panel-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+    }
+    svg { width: 100%; height: auto; display: block; }
+    .axis text { fill: #667085; font-size: 11px; font-weight: 700; }
+    .axis path, .axis line { stroke: #cad2df; }
+    .grid line { stroke: #e6ebf2; }
+    .grid path { display: none; }
+    .dot { cursor: pointer; }
+    .label {
+      fill: #334155;
+      font-size: 11px;
+      font-weight: 900;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+    .quadrant {
+      fill: #64748b;
+      font-size: 13px;
+      font-weight: 900;
+      opacity: .55;
+    }
+    .boundary-line {
+      stroke: #94a3b8;
+      stroke-dasharray: 5 6;
+      stroke-width: 1.2;
+    }
+    .task-row text {
+      fill: #334155;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .task-row line {
+      stroke-width: 4;
+      stroke-linecap: round;
+      opacity: .75;
+    }
+    .network-label {
+      fill: #172033;
+      font-size: 11px;
+      font-weight: 900;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+    .network-link {
+      stroke: #94a3b8;
+      stroke-opacity: .28;
+      stroke-width: 1.2;
+    }
+    .cluster-label {
+      fill: #111827;
+      font-size: 12px;
+      font-weight: 900;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .cluster-category-label {
+      font-size: 18px;
+      font-weight: 900;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 7px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .cluster-count {
+      fill: #334155;
+      font-size: 10px;
+      font-weight: 900;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 4px;
+      pointer-events: none;
+    }
+    .redraft-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      min-height: 560px;
+    }
+    .board-title {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .board {
+      position: relative;
+      min-height: 560px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .skill-card {
+      position: absolute;
+      left: 0;
+      right: 0;
+      min-height: 42px;
+      display: grid;
+      grid-template-columns: 34px 34px minmax(120px, 1fr) minmax(170px, 230px) 74px;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 10px;
+      border: 1px solid #dce3ee;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 5px 14px rgba(17, 24, 39, .08);
+      transition: top .65s cubic-bezier(.2,.8,.2,1), opacity .2s ease, box-shadow .2s ease;
+    }
+    .skill-card.changed {
+      border-color: #a9b8d8;
+      box-shadow: 0 8px 20px rgba(17, 24, 39, .12);
+    }
+    .skill-card img { width: 27px; height: 27px; object-fit: contain; }
+    .rank {
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #eef2f8;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .skill-name { font-weight: 900; }
+    .skill-meta {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .score-strip {
+      height: 10px;
+      border-radius: 999px;
+      background: #e8edf5;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--blue);
+      transition: width .65s ease;
+    }
+    .move-badge {
+      justify-self: end;
+      min-width: 52px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef2f8;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .move-badge.up { background: #e7f7f1; color: var(--green); }
+    .move-badge.down { background: #fff0ed; color: var(--red); }
+    .redraft-button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 12px;
+      border-radius: 8px;
+      background: var(--night);
+      color: white;
+      font-size: 13px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      box-shadow: 0 12px 24px rgba(17, 24, 39, .16);
+    }
+    .weight-controls {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 14px;
+      border: 2px solid var(--line);
+      background: white;
+    }
+    .weight-row {
+      display: grid;
+      grid-template-columns: minmax(86px, 1fr) minmax(110px, 1.2fr) 34px;
+      gap: 10px;
+      align-items: center;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .weight-row input[type="range"] {
+      width: 100%;
+      accent-color: var(--night);
+    }
+    .weight-row output {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .weight-note {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 50;
+      max-width: 280px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: rgba(17, 24, 39, .94);
+      color: white;
+      font-size: 12px;
+      opacity: 0;
+      transform: translate(12px, 12px);
+      transition: opacity .12s ease;
+    }
+    .tooltip.visible { opacity: 1; }
+    footer {
+      padding: 44px 0 64px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .playbook {
+      padding: 70px 42px 86px;
+      border-left: 2px solid var(--line);
+      border-right: 2px solid var(--line);
+      border-bottom: 2px solid var(--line);
+      background: white;
+    }
+    .playbook h2 {
+      max-width: 900px;
+      margin: 8px 0 0;
+      font-size: clamp(44px, 6vw, 86px);
+      line-height: .98;
+      letter-spacing: 0;
+    }
+    .playbook-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 44px;
+      border: 2px solid var(--line);
+    }
+    .playbook-grid article {
+      min-height: 250px;
+      padding: 30px;
+      border-right: 2px solid var(--line);
+      background: var(--mint);
+    }
+    .playbook-grid article:last-child { border-right: 0; }
+    .playbook-grid h3 {
+      margin: 0;
+      color: var(--night);
+      font-size: 26px;
+    }
+    .playbook-grid p {
+      margin: 16px 0 0;
+      color: var(--night);
+      font-size: 18px;
+      line-height: 1.5;
+    }
+    @media (max-width: 980px) {
+      .nav { display: none; }
+      .scene, .two-up, .three-up, .redraft-stage, .persona-panel, .stat-grid, .playbook-grid {
+        grid-template-columns: 1fr;
+      }
+      .stat.wide { grid-column: auto; }
+      .prompt { position: static; }
+      .hero-inner, main { width: min(100% - 28px, 1180px); }
+      .board { min-height: 560px; }
+      .skill-card { grid-template-columns: 30px 30px minmax(90px, 1fr) 52px; }
+      .score-strip { display: none; }
+      .playbook-grid article {
+        border-right: 0;
+        border-bottom: 2px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">CareerRank<span class="brand-mark"></span></div>
+    <nav class="nav" aria-label="Story navigation">
+      <a href="#summary" class="active">Summary</a>
+      <a href="#developers">Developers</a>
+      <a href="#tasks">AI Tasks</a>
+      <a href="#clusters">Text Clusters</a>
+      <a href="#next">Redraft</a>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="kicker">2026 Data Visualization Project</div>
+      <h1>Where do developers go in the AI era?</h1>
+      <p class="subtitle">A visual career report for developers navigating hiring pressure, AI workflows, text-derived skill clusters, and the next stack to learn.</p>
+      <div class="persona-panel">
+        <span>Persona</span>
+        <div class="segmented">
+          <button class="persona active" data-persona="seeker">Job Seeker</button>
+          <button class="persona" data-persona="junior">Junior</button>
+          <button class="persona" data-persona="senior">Senior</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary" id="summary" aria-label="Executive summary">
+      <h2>Executive Summary</h2>
+      <div class="stat-grid">
+        <article class="stat"><strong>Hiring is recovering,</strong> but the entry point still feels narrow for early-career developers.</article>
+        <article class="stat"><strong>AI accelerates work,</strong> but its impact is uneven across tasks and experience levels.</article>
+        <article class="stat"><strong>Open-ended responses cluster around human judgment:</strong> debugging, architecture, verification, communication, domain sense, and adaptability.</article>
+        <article class="stat wide"><strong>The next career edge is not one tool.</strong> It is a stack of speed, verification, and role-aware skill choices.</article>
+      </div>
+    </section>
+
+    <section class="scene" id="developers">
+      <aside class="prompt">
+        <div class="scene-num">Insight #1</div>
+        <h2>Hiring is back, but the entry point is narrower than before.</h2>
+        <div class="micro" id="developer-insight">Find your nearest crowd first. Career advice changes by role, AI habit, and perceived threat.</div>
+      </aside>
+      <div class="viz-card">
+        <div class="viz-head">
+          <div class="viz-title">3,000 Stack Overflow developers · salary by group</div>
+          <div class="controls" id="developer-controls">
+            <button class="pill active" data-mode="role">Role</button>
+            <button class="pill" data-mode="aiUse">AI use</button>
+            <button class="pill" data-mode="threat">Threat</button>
+          </div>
+        </div>
+        <div class="viz-body">
+          <svg id="developer-map" viewBox="0 0 860 560" role="img" aria-label="Developer dots grouped by selected dimension"></svg>
+          <div class="legend" id="developer-legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="tasks">
+      <aside class="prompt">
+        <div class="scene-num">Insight #2</div>
+        <h2>AI makes developers faster, but not equally fast.</h2>
+        <div class="micro" id="task-insight">AI moves fastest in search, drafting, and explanation. Planning, architecture, review, and deployment stay human-heavy.</div>
+      </aside>
+      <div class="viz-card">
+        <div class="viz-head">
+          <div class="viz-title">AI task map · use vs delegation</div>
+          <div class="controls" id="seniority-controls">
+            <button class="pill active" data-s="all">All</button>
+            <button class="pill" data-s="jr">Junior lens</button>
+            <button class="pill" data-s="sr">Senior lens</button>
+          </div>
+        </div>
+        <div class="viz-body">
+          <div class="two-up">
+            <div>
+              <svg id="task-scatter" viewBox="0 0 620 520" role="img" aria-label="AI use and delegation by development task"></svg>
+              <div class="legend" id="task-legend"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="clusters">
+      <aside class="prompt">
+        <div class="scene-num">Insight #4</div>
+        <h2>Text responses become skill clusters.</h2>
+        <div class="micro" id="cluster-insight">AIOpen responses are clustered with seeded categories plus TF-IDF/KMeans. The result shows which human skills developers repeatedly name when asked what survives stronger AI.</div>
+      </aside>
+      <div class="viz-card">
+        <div class="viz-head">
+          <div class="viz-title">AIOpen text clusters · 21,824 responses</div>
+          <div class="controls" id="cluster-controls">
+            <button class="pill active" data-cluster-filter="all">All</button>
+            <button class="pill" data-cluster-filter="junior">Junior lens</button>
+            <button class="pill" data-cluster-filter="senior">Senior lens</button>
+          </div>
+        </div>
+        <div class="viz-body">
+          <svg id="cluster-bubbles" viewBox="0 0 860 620" role="img" aria-label="Text-derived AIOpen response clusters"></svg>
+          <div class="legend" id="cluster-legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="next">
+      <aside class="prompt">
+        <div class="scene-num">Insight #5</div>
+        <h2>What should I prepare next?</h2>
+        <div class="micro" id="redraft-insight">Popularity is only the old board. The redraft mixes current demand, GitHub momentum, and AI-era fit.</div>
+        <div class="weight-controls" aria-label="Redraft weights">
+          <label class="weight-row">
+            <span>Popularity</span>
+            <input id="weight-pop" type="range" min="0" max="100" value="35">
+            <output id="weight-pop-value">35</output>
+          </label>
+          <label class="weight-row">
+            <span>Momentum</span>
+            <input id="weight-growth" type="range" min="0" max="100" value="40">
+            <output id="weight-growth-value">40</output>
+          </label>
+          <label class="weight-row">
+            <span>AI fit</span>
+            <input id="weight-ai" type="range" min="0" max="100" value="25">
+            <output id="weight-ai-value">25</output>
+          </label>
+          <div class="weight-note" id="weight-note">Job Seeker preset: demand and momentum are weighted slightly higher.</div>
+        </div>
+        <button class="redraft-button" id="redraft-button">AI Era Redraft</button>
+      </aside>
+      <div class="viz-card">
+        <div class="viz-head">
+          <div class="viz-title" id="redraft-title">Skill ranking · current popularity</div>
+        </div>
+        <div class="viz-body">
+          <div class="redraft-stage">
+            <div>
+              <div class="board-title"><span id="board-label">Current popularity</span><span id="persona-label">SO 2025</span></div>
+              <div class="board" id="skill-board"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="playbook" aria-label="Final playbook">
+      <div class="scene-num">Final Playbook</div>
+      <h2>The next career strategy is not one thing.</h2>
+      <div class="playbook-grid">
+        <article><h3>Job Seeker</h3><p>Build a portfolio around Python, TypeScript, and SQL that makes your AI-assisted workflow visible and reviewable.</p></article>
+        <article><h3>Junior Developer</h3><p>Protect debugging practice, tests, and code-reading depth. Do not let generation replace understanding.</p></article>
+        <article><h3>Senior Developer</h3><p>Lean into architecture, risk, data quality, and mentoring: the skills that judge AI output.</p></article>
+      </div>
+    </section>
+
+    <footer>Sources: Stack Overflow Developer Survey 2025 sample, AIOpen text clustering prototype, GitHub language momentum, and AI-era skill weighting.</footer>
+  </main>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const tip = d3.select("#tooltip");
+    const showTip = (event, html) => {
+      tip.html(html).style("left", `${event.clientX}px`).style("top", `${event.clientY}px`).classed("visible", true);
+    };
+    const hideTip = () => tip.classed("visible", false);
+
+    const state = {
+      persona: "seeker",
+      developerMode: "role",
+      seniority: "all",
+      skillFilter: "all",
+      clusterFilter: "all",
+      weights: { pop: 35, growth: 40, ai: 25 },
+      redrafted: false
+    };
+    const personaText = {
+      seeker: {
+        dev: "Find a large market, then prove you can use AI without hiding your judgment.",
+        task: "For job seekers, portfolio work should show both AI-assisted speed and human verification.",
+        skill: "The strongest portfolio signals are problem framing, verification, and product context.",
+        redraft: "A job seeker should balance current demand with fast-growing AI-era stacks."
+      },
+      junior: {
+        dev: "The junior map is about learning depth: do not let shortcuts replace debugging practice.",
+        task: "Junior risk appears where AI is easy to use but hard to trust.",
+        skill: "Verification and debugging are the muscles to protect.",
+        redraft: "A junior should choose skills that create practice, not only output."
+      },
+      senior: {
+        dev: "The senior map is about leverage: accountability grows as generation gets cheaper.",
+        task: "Senior value concentrates around planning, architecture, review, and deployment boundaries.",
+        skill: "Architecture, tradeoff judgment, mentoring, and domain knowledge become premium skills.",
+        redraft: "A senior should favor stacks that connect AI to systems, risk, and architecture."
+      }
+    };
+
+    document.querySelectorAll(".persona").forEach(button => {
+      button.addEventListener("click", () => {
+        state.persona = button.dataset.persona;
+        document.querySelectorAll(".persona").forEach(b => b.classList.toggle("active", b === button));
+        document.getElementById("developer-insight").textContent = personaText[state.persona].dev;
+        document.getElementById("task-insight").textContent = personaText[state.persona].task;
+        document.getElementById("redraft-insight").textContent = personaText[state.persona].redraft;
+        state.weights = { ...redraftWeights[state.persona] };
+        syncWeightControls();
+        renderClusters();
+        renderRedraft();
+      });
+    });
+
+    const navLinks = [...document.querySelectorAll(".nav a")];
+    const sections = navLinks.map(link => document.querySelector(link.getAttribute("href")));
+    const navObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`));
+      });
+    }, { rootMargin: "-35% 0px -55% 0px" });
+    sections.forEach(section => navObserver.observe(section));
+
+    // Scene 1: Developer map, based on Hyoeun's SO_DEVS sample.
+    const D = window.SO_DEVS;
+    const F = {};
+    D.fields.forEach((f, i) => F[f] = i);
+    const devs = D.devs.map((row, i) => ({
+      id: i,
+      years: row[F.yearsCode],
+      comp: row[F.comp],
+      role: D.roles[row[F.role]] || "Unknown",
+      aiUse: D.aiUse[row[F.aiUse]] || "Unknown",
+      threat: D.threats[row[F.threat]] || "Unknown",
+      jobSat: row[F.jobSat],
+      country: row[F.country],
+      langs: row[F.langs] || []
+    })).filter(d => d.comp >= 1000 && d.comp <= 400000);
+    const developerPalettes = {
+      role: d3.schemeTableau10.concat(["#8b5cf6", "#64748b", "#0f766e", "#be123c"]),
+      aiUse: ["#0f8a6b", "#2563eb", "#7048b8", "#b77912", "#c24136", "#64748b"],
+      threat: ["#0f8a6b", "#b77912", "#c24136", "#64748b"]
+    };
+    const devSvg = d3.select("#developer-map");
+    const devW = 860, devH = 560, devM = { top: 24, right: 18, bottom: 92, left: 68 };
+    const devG = devSvg.append("g").attr("transform", `translate(${devM.left},${devM.top})`);
+    const devIW = devW - devM.left - devM.right;
+    const devIH = devH - devM.top - devM.bottom;
+    const devGrid = devG.append("g").attr("class", "grid");
+    const devAxisY = devG.append("g").attr("class", "axis");
+    const devAxisX = devG.append("g").attr("class", "axis").attr("transform", `translate(0,${devIH})`);
+    const devDots = devG.append("g");
+    const ySalary = d3.scaleLog().domain([1000, 400000]).range([devIH, 0]);
+    devAxisY.call(d3.axisLeft(ySalary).tickValues([1000, 3000, 10000, 30000, 100000, 300000]).tickFormat(d => `$${d >= 1000 ? d / 1000 + "k" : d}`));
+    devGrid.call(d3.axisLeft(ySalary).tickValues([1000, 3000, 10000, 30000, 100000, 300000]).tickSize(-devIW).tickFormat(""));
+    devG.append("text").attr("class", "label").attr("x", -50).attr("y", -8).text("Salary");
+
+    function shortRole(role) {
+      return role.replace("Desktop/Enterprise", "Desktop").replace("Eng. manager", "Manager").replace("Cloud/Infra", "Cloud");
+    }
+    function developerDomain(mode) {
+      const values = [...new Set(devs.map(d => d[mode]))].filter(Boolean);
+      if (mode === "role") {
+        const counts = d3.rollups(devs, v => v.length, d => d.role).sort((a,b) => b[1] - a[1]);
+        return counts.slice(0, 10).map(d => d[0]);
+      }
+      return values;
+    }
+    function renderDeveloperMap() {
+      const mode = state.developerMode;
+      const domain = developerDomain(mode);
+      const domainSet = new Set(domain);
+      const data = devs.filter(d => domainSet.has(d[mode]));
+      const x = d3.scalePoint().domain(domain).range([20, devIW - 20]).padding(.5);
+      const color = d3.scaleOrdinal().domain(domain).range(developerPalettes[mode]);
+      devAxisX.transition().duration(550).call(d3.axisBottom(x).tickFormat(d => mode === "role" ? shortRole(d) : d));
+      const circles = devDots.selectAll("circle").data(data, d => d.id);
+      circles.enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 2.6)
+        .attr("cx", d => x(d[mode]) + (Math.random() - .5) * 34)
+        .attr("cy", d => ySalary(d.comp))
+        .attr("fill", d => color(d[mode]))
+        .attr("opacity", .58)
+        .on("mousemove", (event, d) => showTip(event, `<b>${d.role}</b><br>${d.aiUse} AI use · threat: ${d.threat}<br>$${d3.format(",")(d.comp)} · ${d.years} yrs<br>${d.langs.slice(0,3).join(", ")}`))
+        .on("mouseleave", hideTip)
+        .merge(circles)
+        .transition().duration(650)
+        .attr("cx", d => x(d[mode]) + (((d.id * 37) % 100) / 100 - .5) * 34)
+        .attr("cy", d => ySalary(d.comp))
+        .attr("fill", d => color(d[mode]));
+      circles.exit().remove();
+      const legend = document.getElementById("developer-legend");
+      legend.innerHTML = domain.map(d => `<span class="legend-item"><i class="swatch" style="background:${color(d)}"></i>${mode === "role" ? shortRole(d) : d}</span>`).join("");
+    }
+    document.querySelectorAll("#developer-controls .pill").forEach(button => {
+      button.addEventListener("click", () => {
+        state.developerMode = button.dataset.mode;
+        document.querySelectorAll("#developer-controls .pill").forEach(b => b.classList.toggle("active", b === button));
+        renderDeveloperMap();
+      });
+    });
+
+    // Scene 2: AI task map, translated from Hyoeun's task dashboard.
+    const stages = ["Planning", "Design", "Coding", "Testing", "Review", "Docs", "Deploy/Ops", "Search/Learn"];
+    const stageColor = {
+      "Planning": "#b77912", "Design": "#2563eb", "Coding": "#f97316", "Testing": "#0ea5e9",
+      "Review": "#06b6d4", "Docs": "#10b981", "Deploy/Ops": "#db2777", "Search/Learn": "#7048b8"
+    };
+    const tasks = [
+      { name: "Autocomplete", stage: "Coding", n: 8000, m: { freq: 88, delegate: 75, currentAI: 82, plan: 70, humanKept: 12 } },
+      { name: "Writing code", stage: "Coding", n: 9000, m: { freq: 80, delegate: 55, currentAI: 74, plan: 72, humanKept: 22 } },
+      { name: "Debugging", stage: "Coding", n: 7000, m: { freq: 68, delegate: 48, currentAI: 62, plan: 65, humanKept: 30 } },
+      { name: "Searching", stage: "Search/Learn", n: 8500, m: { freq: 85, delegate: 78, currentAI: 80, plan: 60, humanKept: 10 } },
+      { name: "Explaining code", stage: "Search/Learn", n: 6000, m: { freq: 70, delegate: 72, currentAI: 66, plan: 58, humanKept: 18 } },
+      { name: "Writing tests", stage: "Testing", n: 5800, m: { freq: 55, delegate: 58, currentAI: 50, plan: 64, humanKept: 33 } },
+      { name: "Documentation", stage: "Docs", n: 6300, m: { freq: 60, delegate: 68, currentAI: 56, plan: 60, humanKept: 25 } },
+      { name: "Commit messages", stage: "Docs", n: 4700, m: { freq: 52, delegate: 70, currentAI: 48, plan: 50, humanKept: 24 } },
+      { name: "Code review", stage: "Review", n: 4747, m: { freq: 38, delegate: 30, currentAI: 33, plan: 55, humanKept: 55 } },
+      { name: "Project planning", stage: "Planning", n: 3595, m: { freq: 22, delegate: 18, currentAI: 20, plan: 45, humanKept: 70 } },
+      { name: "Architecture", stage: "Design", n: 3300, m: { freq: 25, delegate: 15, currentAI: 22, plan: 42, humanKept: 75 } },
+      { name: "Deploy/monitor", stage: "Deploy/Ops", n: 3000, m: { freq: 18, delegate: 20, currentAI: 17, plan: 40, humanKept: 72 } }
+    ];
+    function taskVal(task, key) {
+      let value = task.m[key];
+      const useType = ["freq", "currentAI", "plan"].includes(key);
+      if (state.seniority === "jr") {
+        if (useType) value *= 1.08;
+        else if (key === "delegate") value *= 1.05;
+        else if (key === "humanKept") value *= .85;
+      }
+      if (state.seniority === "sr") {
+        if (useType) value *= .82;
+        else if (key === "delegate") value *= .85;
+        else if (key === "humanKept") value *= 1.3;
+      }
+      return Math.max(0, Math.min(100, value));
+    }
+    const taskSvg = d3.select("#task-scatter");
+    const taskW = 620, taskH = 520, taskM = { top: 28, right: 22, bottom: 56, left: 58 };
+    const taskG = taskSvg.append("g").attr("transform", `translate(${taskM.left},${taskM.top})`);
+    const taskIW = taskW - taskM.left - taskM.right;
+    const taskIH = taskH - taskM.top - taskM.bottom;
+    const taskX = d3.scaleLinear().domain([0, 100]).range([0, taskIW]);
+    const taskY = d3.scaleLinear().domain([0, 100]).range([taskIH, 0]);
+    taskG.append("g").attr("class", "grid").attr("transform", `translate(0,${taskIH})`).call(d3.axisBottom(taskX).ticks(5).tickSize(-taskIH).tickFormat(""));
+    taskG.append("g").attr("class", "grid").call(d3.axisLeft(taskY).ticks(5).tickSize(-taskIW).tickFormat(""));
+    taskG.append("g").attr("class", "axis").attr("transform", `translate(0,${taskIH})`).call(d3.axisBottom(taskX).ticks(5).tickFormat(d => d + "%"));
+    taskG.append("g").attr("class", "axis").call(d3.axisLeft(taskY).ticks(5).tickFormat(d => d + "%"));
+    taskG.append("line").attr("class", "boundary-line").attr("x1", taskX(50)).attr("x2", taskX(50)).attr("y1", 0).attr("y2", taskIH);
+    taskG.append("line").attr("class", "boundary-line").attr("x1", 0).attr("x2", taskIW).attr("y1", taskY(50)).attr("y2", taskY(50));
+    taskG.append("text").attr("class", "quadrant").attr("x", taskIW - 4).attr("y", 16).attr("text-anchor", "end").text("AI territory");
+    taskG.append("text").attr("class", "quadrant").attr("x", taskIW - 4).attr("y", taskIH - 8).attr("text-anchor", "end").text("tension zone");
+    taskG.append("text").attr("class", "quadrant").attr("x", 4).attr("y", taskIH - 8).text("human-held");
+    taskG.append("text").attr("class", "label").attr("x", taskIW / 2).attr("y", taskIH + 44).attr("text-anchor", "middle").text("AI use →");
+    taskG.append("text").attr("class", "label").attr("transform", "rotate(-90)").attr("x", -taskIH / 2).attr("y", -42).attr("text-anchor", "middle").text("Delegation trust →");
+    const rTask = d3.scaleSqrt().domain(d3.extent(tasks, d => d.n)).range([7, 21]);
+    function renderTasks() {
+      const dots = taskG.selectAll(".task-dot").data(tasks, d => d.name);
+      dots.enter().append("circle")
+        .attr("class", "task-dot dot")
+        .attr("stroke-width", 1.4)
+        .on("mousemove", (event, d) => showTip(event, `<b>${d.name}</b><br>${d.stage}<br>AI use ${Math.round(taskVal(d, "freq"))}% · trust ${Math.round(taskVal(d, "delegate"))}%`))
+        .on("mouseleave", hideTip)
+        .merge(dots)
+        .transition().duration(600)
+        .attr("cx", d => taskX(taskVal(d, "freq")))
+        .attr("cy", d => taskY(taskVal(d, "delegate")))
+        .attr("r", d => rTask(d.n))
+        .attr("fill", d => stageColor[d.stage])
+        .attr("stroke", d => stageColor[d.stage])
+        .attr("fill-opacity", .76);
+      const labels = taskG.selectAll(".task-label").data(tasks, d => d.name);
+      labels.enter().append("text").attr("class", "label task-label").attr("text-anchor", "middle")
+        .merge(labels)
+        .transition().duration(600)
+        .attr("x", d => taskX(taskVal(d, "freq")))
+        .attr("y", d => taskY(taskVal(d, "delegate")) - rTask(d.n) - 4)
+        .text(d => d.name);
+    }
+    document.querySelectorAll("#seniority-controls .pill").forEach(button => {
+      button.addEventListener("click", () => {
+        state.seniority = button.dataset.s;
+        document.querySelectorAll("#seniority-controls .pill").forEach(b => b.classList.toggle("active", b === button));
+        renderTasks();
+      });
+    });
+    document.getElementById("task-legend").innerHTML = stages.map(stage => `<span class="legend-item"><i class="swatch" style="background:${stageColor[stage]}"></i>${stage}</span>`).join("");
+
+    // Scene 4: AIOpen text clustering result from the clustered open-ended response pipeline.
+    const clusterData = window.AIOPEN_CLUSTER_DATA;
+    const clusterCats = clusterData?.cats || [
+      { id: "problem", name: "Problem Solving", color: "#f97316" },
+      { id: "design", name: "System Design", color: "#4e9af1" },
+      { id: "comm", name: "Communication", color: "#a78bfa" },
+      { id: "domain", name: "Domain Sense", color: "#34d399" },
+      { id: "fund", name: "CS Fundamentals", color: "#facc15" },
+      { id: "ai", name: "AI Fluency", color: "#ec4899" },
+      { id: "adapt", name: "Adaptability", color: "#22d3ee" }
+    ];
+    const clusterCatById = Object.fromEntries(clusterCats.map(d => [d.id, d]));
+    const clusterSubs = (clusterData?.subs || []).slice()
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 30)
+      .map(d => ({
+        ...d,
+        color: clusterCatById[d.cat]?.color || "#64748b",
+        catName: clusterCatById[d.cat]?.name || "Cluster",
+        seniorShare: d.expW ? (d.expW[3] || 0) + (d.expW[4] || 0) : .45,
+        juniorShare: d.expW ? (d.expW[0] || 0) + (d.expW[1] || 0) : .2
+      }));
+    const clusterSvg = d3.select("#cluster-bubbles");
+    const clusterW = 860, clusterH = 620;
+    const clusterRadius = d3.scaleSqrt()
+      .domain(d3.extent(clusterSubs, d => d.count))
+      .range([16, 62]);
+    const clusterGroup = clusterSvg.append("g");
+    const clusterNodes = clusterSubs.map((d, i) => ({
+      ...d,
+      x: clusterW / 2 + Math.cos(i) * 80,
+      y: clusterH / 2 + Math.sin(i) * 80,
+      r: clusterRadius(d.count)
+    }));
+    clusterCats.forEach((cat, i) => {
+      const angle = i / clusterCats.length * Math.PI * 2 - Math.PI / 2;
+      cat.anchorX = clusterW / 2 + Math.cos(angle) * 260;
+      cat.anchorY = clusterH / 2 + Math.sin(angle) * 210;
+      const labelOffsets = {
+        problem: { x: -118, y: -70 },
+        design: { x: 92, y: -48 },
+        comm: { x: 92, y: 38 },
+        domain: { x: 70, y: 82 },
+        fund: { x: -72, y: 82 },
+        ai: { x: -92, y: 38 },
+        adapt: { x: -92, y: -48 }
+      };
+      const offset = labelOffsets[cat.id] || { x: Math.cos(angle) * 72, y: Math.sin(angle) * 72 };
+      cat.labelX = cat.anchorX + offset.x;
+      cat.labelY = cat.anchorY + offset.y;
+    });
+    clusterSvg.append("g")
+      .selectAll("text")
+      .data(clusterCats)
+      .join("text")
+      .attr("class", "cluster-category-label")
+      .attr("x", d => d.labelX)
+      .attr("y", d => d.labelY)
+      .style("fill", d => d.color)
+      .text(d => d.name);
+    const clusterSimulation = d3.forceSimulation(clusterNodes)
+      .force("charge", d3.forceManyBody().strength(8))
+      .force("collide", d3.forceCollide(d => d.r + 4))
+      .force("x", d3.forceX(d => clusterCatById[d.cat]?.anchorX || clusterW / 2).strength(.12))
+      .force("y", d3.forceY(d => clusterCatById[d.cat]?.anchorY || clusterH / 2).strength(.12))
+      .on("tick", () => {
+        clusterCircles.attr("cx", d => d.x).attr("cy", d => d.y);
+        clusterLabels.attr("x", d => d.x).attr("y", d => d.y + 4);
+      });
+    const clusterCircles = clusterGroup.selectAll("circle").data(clusterNodes, d => d.id).join("circle")
+      .attr("r", d => d.r)
+      .attr("fill", d => d.color)
+      .attr("fill-opacity", .72)
+      .attr("stroke", "#111827")
+      .attr("stroke-width", 1.4)
+      .on("mousemove", (event, d) => {
+        const terms = (d.terms || []).slice(0, 5).join(", ");
+        const quote = d.quotes?.[0]?.t ? d.quotes[0].t.slice(0, 180) + (d.quotes[0].t.length > 180 ? "..." : "") : "";
+        showTip(event, `<b>${d.name}</b><br>${d.catName} · ${d3.format(",")(d.count)} mentions<br>${terms}<br><br>${quote}`);
+      })
+      .on("mouseleave", hideTip);
+    const clusterLabels = clusterGroup.selectAll(".cluster-label").data(clusterNodes, d => d.id).join("text")
+      .attr("class", "cluster-label")
+      .text(d => d3.format(",")(d.count));
+    function renderClusters() {
+      const filter = state.clusterFilter === "all"
+        ? (state.persona === "senior" ? "senior" : state.persona === "junior" ? "junior" : "all")
+        : state.clusterFilter;
+      clusterCircles.transition().duration(450)
+        .attr("opacity", d => {
+          if (filter === "senior") return d.seniorShare >= .52 ? 1 : .2;
+          if (filter === "junior") return d.juniorShare >= .18 ? 1 : .2;
+          return 1;
+        })
+        .attr("stroke-width", d => {
+          if (filter === "senior") return d.seniorShare >= .52 ? 2.6 : 1;
+          if (filter === "junior") return d.juniorShare >= .18 ? 2.6 : 1;
+          return 1.4;
+        });
+      clusterLabels.transition().duration(450).attr("opacity", d => {
+        if (filter === "senior") return d.seniorShare >= .52 ? 1 : .18;
+        if (filter === "junior") return d.juniorShare >= .18 ? 1 : .18;
+        return 1;
+      });
+    }
+    document.querySelectorAll("#cluster-controls .pill").forEach(button => {
+      button.addEventListener("click", () => {
+        state.clusterFilter = button.dataset.clusterFilter;
+        document.querySelectorAll("#cluster-controls .pill").forEach(b => b.classList.toggle("active", b === button));
+        renderClusters();
+      });
+    });
+    document.getElementById("cluster-legend").innerHTML = clusterCats.map(cat => `<span class="legend-item"><i class="swatch" style="background:${cat.color}"></i>${cat.name}</span>`).join("");
+
+    // Scene 5: Integrated skill redraft conclusion.
+    const languageSkills = [
+      { name: "JavaScript", slug: "javascript", usage: 66.0, growth: 186.4, ai: 70 },
+      { name: "Python", slug: "python", usage: 57.9, growth: 253.6, ai: 100 },
+      { name: "Shell", slug: "bash", usage: 48.7, growth: 139.5, ai: 50 },
+      { name: "TypeScript", slug: "typescript", usage: 43.6, growth: 610.7, ai: 82 },
+      { name: "Java", slug: "java", usage: 29.4, growth: 44.1, ai: 55 },
+      { name: "C#", slug: "csharp", usage: 27.8, growth: 79.8, ai: 45 },
+      { name: "C++", slug: "cplusplus", usage: 23.5, growth: 119.7, ai: 60 },
+      { name: "C", slug: "c", usage: 22.0, growth: 143.4, ai: 45 },
+      { name: "PHP", slug: "php", usage: 18.9, growth: 55.4, ai: 25 },
+      { name: "Go", slug: "go", usage: 16.4, growth: 155.2, ai: 65 },
+      { name: "Rust", slug: "rust", usage: 14.8, growth: 532.2, ai: 72 },
+      { name: "Kotlin", slug: "kotlin", usage: 9.6, growth: 276.1, ai: 45 }
+    ];
+    const redraftWeights = {
+      seeker: { pop: 35, growth: 40, ai: 25 },
+      junior: { pop: 25, growth: 35, ai: 40 },
+      senior: { pop: 20, growth: 20, ai: 60 }
+    };
+    const maxSkill = {
+      usage: d3.max(languageSkills, d => d.usage),
+      growth: d3.max(languageSkills, d => d.growth),
+      ai: 100
+    };
+    const originalBoard = [...languageSkills].sort((a,b) => b.usage - a.usage).map((d, i) => ({ ...d, original: i + 1 }));
+    function logo(d) {
+      return `https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/${d.slug}/${d.slug}-original.svg`;
+    }
+    function personaName() {
+      return state.persona === "seeker" ? "Job Seeker" : state.persona === "junior" ? "Junior" : "Senior";
+    }
+    function syncWeightControls() {
+      const labels = {
+        seeker: "Job Seeker preset: demand and momentum are weighted slightly higher.",
+        junior: "Junior preset: AI fit carries more weight, but momentum still matters.",
+        senior: "Senior preset: AI fit dominates because judgment and leverage compound."
+      };
+      [
+        ["pop", "weight-pop"],
+        ["growth", "weight-growth"],
+        ["ai", "weight-ai"]
+      ].forEach(([key, id]) => {
+        document.getElementById(id).value = state.weights[key];
+        document.getElementById(`${id}-value`).value = state.weights[key];
+      });
+      document.getElementById("weight-note").textContent = labels[state.persona];
+    }
+    function scoreSkill(d) {
+      const w = state.weights;
+      const total = Math.max(1, w.pop + w.growth + w.ai);
+      return (w.pop * d.usage / maxSkill.usage + w.growth * d.growth / maxSkill.growth + w.ai * d.ai / maxSkill.ai) / total * 100;
+    }
+    function card(skill, rank, meta, score, move) {
+      const moveClass = move > 0 ? "up" : move < 0 ? "down" : "";
+      const moveText = move > 0 ? `+${move}` : move < 0 ? `${move}` : "0";
+      return `<div class="skill-card ${move !== 0 ? "changed" : ""}" data-skill="${skill.name}" style="top:${(rank - 1) * 43}px">
+        <div class="rank">${rank}</div>
+        <img src="${logo(skill)}" alt="">
+        <div><div class="skill-name">${skill.name}</div><div class="skill-meta">${meta}</div></div>
+        <div class="score-strip"><div class="score-fill" style="width:${score}%"></div></div>
+        <div class="move-badge ${moveClass}">${moveText}</div>
+      </div>`;
+    }
+    function renderSkillList(items) {
+      const el = document.getElementById("skill-board");
+      const existing = new Map([...el.querySelectorAll(".skill-card")].map(card => [card.dataset.skill, card]));
+      items.forEach(d => {
+        let node = existing.get(d.name);
+        if (!node) {
+          el.insertAdjacentHTML("beforeend", card(d, d.rank, d.meta, d.score, d.move));
+          node = el.querySelector(`.skill-card[data-skill="${CSS.escape(d.name)}"]`);
+        }
+        node.style.top = `${(d.rank - 1) * 43}px`;
+        node.classList.toggle("changed", d.move !== 0);
+        node.querySelector(".rank").textContent = d.rank;
+        node.querySelector(".skill-meta").textContent = d.meta;
+        node.querySelector(".score-fill").style.width = `${d.score}%`;
+        const badge = node.querySelector(".move-badge");
+        badge.textContent = d.move > 0 ? `+${d.move}` : d.move < 0 ? `${d.move}` : "0";
+        badge.classList.toggle("up", d.move > 0);
+        badge.classList.toggle("down", d.move < 0);
+      });
+      items.forEach(d => {
+        const node = existing.get(d.name) || el.querySelector(`.skill-card[data-skill="${CSS.escape(d.name)}"]`);
+        if (node) el.appendChild(node);
+      });
+    }
+    function renderRedraft() {
+      const scored = originalBoard.map(d => ({ ...d, score: scoreSkill(d) })).sort((a,b) => b.score - a.score).map((d, i) => ({ ...d, redraft: i + 1 }));
+      const scoredByName = Object.fromEntries(scored.map(d => [d.name, d]));
+      const items = state.redrafted ? scored.map(d => {
+        const move = d.original - d.redraft;
+        const label = move > 0 ? `climbs ${move}` : move < 0 ? `falls ${Math.abs(move)}` : "holds";
+        return { ...d, rank: d.redraft, meta: `${label} · score ${Math.round(d.score)}`, score: Math.round(d.score), move };
+      }) : originalBoard.map(d => {
+        const scoredItem = scoredByName[d.name];
+        return { ...d, rank: d.original, meta: `${d.usage}% used · redraft score ${Math.round(scoredItem.score)}`, score: Math.round(scoredItem.score), move: 0 };
+      });
+      renderSkillList(items);
+      document.getElementById("redraft-title").textContent = state.redrafted ? "Skill ranking · AI-era preparation" : "Skill ranking · current popularity";
+      document.getElementById("board-label").textContent = state.redrafted ? "AI-era ranking" : "Current popularity";
+      document.getElementById("persona-label").textContent = state.redrafted
+        ? `${personaName()} · ${state.weights.pop}/${state.weights.growth}/${state.weights.ai}`
+        : "SO 2025";
+    }
+    ["pop", "growth", "ai"].forEach(key => {
+      const input = document.getElementById(`weight-${key}`);
+      input.addEventListener("input", () => {
+        state.weights[key] = Number(input.value);
+        document.getElementById(`weight-${key}-value`).value = state.weights[key];
+        state.redrafted = true;
+        document.getElementById("weight-note").textContent = `Custom ${personaName()} weights: popularity ${state.weights.pop}, momentum ${state.weights.growth}, AI fit ${state.weights.ai}.`;
+        document.getElementById("redraft-button").textContent = "Redraft Again";
+        renderRedraft();
+      });
+    });
+    document.getElementById("redraft-button").addEventListener("click", () => {
+      if (state.redrafted) {
+        state.redrafted = false;
+        renderRedraft();
+        window.setTimeout(() => {
+          state.redrafted = true;
+          renderRedraft();
+        }, 140);
+      } else {
+        state.redrafted = true;
+      }
+      document.getElementById("redraft-button").textContent = "Redraft Again";
+      renderRedraft();
+    });
+
+    function varColor(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    renderDeveloperMap();
+    renderTasks();
+    renderClusters();
+    syncWeightControls();
+    renderRedraft();
+  </script>
+</body>
+</html>
