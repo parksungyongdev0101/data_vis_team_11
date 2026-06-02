@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Where do developers go in the AI era?</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="data/aiopen_clusters.js"></script>
+    <script src="data/threat_salary_data.js"></script>
+    <script src="data/pay_gap_data.js"></script>
+    <script src="data/verification_data.js"></script>
+    <script src="data/skill_redraft_data.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="topbar">
+      <div class="brand">CareerRank<span class="brand-mark"></span></div>
+      <nav class="nav" aria-label="Story navigation">
+        <a href="#summary" class="active">Summary</a>
+        <a href="#threat">The fear</a>
+        <a href="#pay">The payoff</a>
+        <a href="#verify">The trap</a>
+        <a href="#clusters">What lasts</a>
+        <a href="#next">Redraft</a>
+      </nav>
+    </div>
+
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="kicker">2026 Data Visualization Project</div>
+        <h1>Where do developers go in the AI era?</h1>
+        <p class="subtitle">
+          A visual career report: the fear of AI is overblown, the pay-off is
+          real, the real trap is verification — and here's the stack that still
+          pays.
+        </p>
+        <div class="persona-panel">
+          <span>Persona</span>
+          <div class="segmented">
+            <button class="persona active" data-persona="seeker">
+              Job Seeker
+            </button>
+            <button class="persona" data-persona="junior">Junior</button>
+            <button class="persona" data-persona="senior">Senior</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary" id="summary" aria-label="Executive summary">
+        <h2>Executive Summary</h2>
+        <div class="stat-grid">
+          <article class="stat">
+            <strong>The fear is psychological, not financial.</strong> Threat
+            perception rises with AI use (10%→21%), but within a country,
+            developers who feel threatened earn the same as those who don't.
+          </article>
+          <article class="stat">
+            <strong>AI users out-earn non-users</strong> in most countries, and
+            from 2023 to 2025 that gap widened.
+          </article>
+          <article class="stat">
+            <strong>The real risk is verification.</strong> Juniors lean hardest
+            on AI for the very skills — debugging, code-reading — they still
+            need to build.
+          </article>
+          <article class="stat wide">
+            <strong>What still pays is judgment:</strong> architecture,
+            verification, domain sense — plus a stack chosen for momentum, not
+            habit.
+          </article>
+        </div>
+      </section>
+
+      <section class="scene" id="threat">
+        <aside class="prompt">
+          <div class="scene-num">Act 1 · The fear</div>
+          <h2>Threatened or not — the pay is the same.</h2>
+          <div class="micro">
+            The more you use AI, the more it feels threatening (10% &rarr; 21%
+            from non-users to daily-agent users). Yet within one country,
+            developers who feel threatened earn the same as those who don't. The
+            fear is psychological, not financial.
+          </div>
+        </aside>
+        <div class="viz-card">
+          <div class="viz-head">
+            <div class="viz-title">
+              Salary by how threatened US developers feel · SO 2025
+            </div>
+          </div>
+          <div class="viz-body">
+            <svg
+              id="gi-svg"
+              viewBox="0 0 980 460"
+              role="img"
+              aria-label="US developer salary by threat perception — three flat clouds"
+            ></svg>
+            <div class="legend" id="gi-legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="pay">
+        <aside class="prompt">
+          <div class="scene-num">Act 2 · The payoff</div>
+          <h2>AI users actually earn more — and the gap is widening.</h2>
+          <div class="micro">
+            In most countries AI users out-earn non-users, and 2023→2025 the gap
+            grew. The "AI users earn less" headline was a mix-up of rich and
+            poor countries.
+          </div>
+        </aside>
+        <div class="viz-card">
+          <div class="viz-head">
+            <div class="viz-title" id="pay-title">
+              AI pay gap by country · 2023 → 2025
+            </div>
+            <div class="controls" id="pay-controls">
+              <button class="pill" id="pay-play">▶ Play</button>
+              <button class="pill active" data-view="gap">Pay gap</button>
+              <button class="pill" data-view="catch">Catch-up</button>
+            </div>
+          </div>
+          <div class="viz-body">
+            <svg
+              id="pay-svg"
+              viewBox="0 0 860 520"
+              role="img"
+              aria-label="AI pay gap and adoption by country"
+            ></svg>
+            <div class="legend" id="pay-legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="verify">
+        <aside class="prompt">
+          <div class="scene-num">Act 3 · The trap</div>
+          <h2>The trap isn't generation — it's verification.</h2>
+          <div class="micro">
+            Juniors earn the same AI pay premium as seniors — but they're ~4×
+            more likely to feel AI hollowing out their own problem-solving (35%
+            vs 8%). The risk is developmental: the skill to catch AI's errors is
+            the one fading.
+          </div>
+        </aside>
+        <div class="viz-card">
+          <div class="viz-head">
+            <div class="viz-title" id="vf-title">
+              Skill atrophy vs AI pay premium · by experience
+            </div>
+            <div class="controls" id="vf-controls">
+              <button class="pill active" data-view="atrophy">
+                Skill atrophy
+              </button>
+              <button class="pill" data-view="trust">Trust boundary</button>
+            </div>
+          </div>
+          <div class="viz-body">
+            <svg
+              id="vf-svg"
+              viewBox="0 0 980 480"
+              role="img"
+              aria-label="Skill atrophy vs AI pay premium by experience, and the AI trust boundary by task"
+            ></svg>
+            <div class="legend" id="vf-legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="clusters">
+        <aside class="prompt">
+          <div class="scene-num">Act 4 · What survives</div>
+          <h2>Text responses become skill clusters.</h2>
+          <div class="micro" id="cluster-insight">
+            AIOpen responses are clustered with seeded categories plus
+            TF-IDF/KMeans. The result shows which human skills developers
+            repeatedly name when asked what survives stronger AI.
+          </div>
+        </aside>
+        <div class="viz-card">
+          <div class="viz-head">
+            <div class="viz-title">AIOpen text clusters · 21,824 responses</div>
+            <div class="controls" id="cluster-controls">
+              <button class="pill active" data-cluster-filter="all">All</button>
+              <button class="pill" data-cluster-filter="junior">
+                Junior lens
+              </button>
+              <button class="pill" data-cluster-filter="senior">
+                Senior lens
+              </button>
+            </div>
+          </div>
+          <div class="viz-body">
+            <svg
+              id="cluster-bubbles"
+              viewBox="0 0 860 620"
+              role="img"
+              aria-label="Text-derived AIOpen response clusters"
+            ></svg>
+            <div class="legend" id="cluster-legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="next">
+        <aside class="prompt">
+          <div class="scene-num">Act 5 · Your move</div>
+          <h2>What should I prepare next?</h2>
+          <div class="micro" id="redraft-insight">
+            Popularity is only the old board. The redraft mixes current demand,
+            GitHub momentum, and AI-era fit.
+          </div>
+          <div class="weight-controls" aria-label="Redraft weights">
+            <label class="weight-row">
+              <span>Popularity</span>
+              <input
+                id="weight-pop"
+                type="range"
+                min="0"
+                max="100"
+                value="35"
+              />
+              <output id="weight-pop-value">35</output>
+            </label>
+            <label class="weight-row">
+              <span>Momentum</span>
+              <input
+                id="weight-growth"
+                type="range"
+                min="0"
+                max="100"
+                value="40"
+              />
+              <output id="weight-growth-value">40</output>
+            </label>
+            <label class="weight-row">
+              <span>AI fit</span>
+              <input id="weight-ai" type="range" min="0" max="100" value="25" />
+              <output id="weight-ai-value">25</output>
+            </label>
+            <div class="weight-note" id="weight-note">
+              Job Seeker preset: demand and momentum are weighted slightly
+              higher.
+            </div>
+          </div>
+          <button class="redraft-button" id="redraft-button">
+            AI Era Redraft
+          </button>
+        </aside>
+        <div class="viz-card">
+          <div class="viz-head">
+            <div class="viz-title" id="redraft-title">
+              Skill ranking · current popularity
+            </div>
+          </div>
+          <div class="viz-body">
+            <div class="redraft-stage">
+              <div>
+                <div class="board-title">
+                  <span id="board-label">Current popularity</span
+                  ><span id="persona-label">SO 2025</span>
+                </div>
+                <div class="board" id="skill-board"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="playbook" aria-label="Final playbook">
+        <div class="scene-num">Final Playbook</div>
+        <h2>The next career strategy is not one thing.</h2>
+        <div class="playbook-grid">
+          <article>
+            <h3>Job Seeker</h3>
+            <p>
+              Build a portfolio around Python, TypeScript, and SQL that makes
+              your AI-assisted workflow visible and reviewable.
+            </p>
+          </article>
+          <article>
+            <h3>Junior Developer</h3>
+            <p>
+              Protect debugging practice, tests, and code-reading depth. Do not
+              let generation replace understanding.
+            </p>
+          </article>
+          <article>
+            <h3>Senior Developer</h3>
+            <p>
+              Lean into architecture, risk, data quality, and mentoring: the
+              skills that judge AI output.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <footer>
+        Sources: Stack Overflow Developer Survey 2023–2025, GitHub Innovation
+        Graph (language momentum), and AIOpen open-response clustering (21,824
+        responses). These are cross-sectional survey patterns — consistent with,
+        not proof of, causation.
+      </footer>
+    </main>
+
+    <div class="scroll-hint" id="scroll-hint">scroll ↓</div>
+    <script src="script.js"></script>
+  </body>
+</html>
