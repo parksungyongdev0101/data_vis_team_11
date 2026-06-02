@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q3 Developer Skill Redraft</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #657083;
+      --line: #d9dee7;
+      --paper: #f7f3ea;
+      --panel: #ffffff;
+      --blue: #2662d9;
+      --green: #168566;
+      --red: #c6453d;
+      --gold: #c78916;
+      --violet: #7b4ab7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.45;
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 32px 20px 56px; }
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr);
+      gap: 28px;
+      align-items: end;
+      min-height: 32vh;
+      border-bottom: 1px solid #cbc3b4;
+      padding-bottom: 22px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 860px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(42px, 7vw, 92px);
+      line-height: .92;
+      letter-spacing: 0;
+    }
+    h2 { margin: 0 0 12px; font-size: 22px; letter-spacing: 0; }
+    p { margin: 0; }
+    .lede { max-width: 560px; color: #394253; font-size: 18px; }
+    .source {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 14px;
+    }
+    .source a { color: #2b579f; }
+    .section {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 28px;
+      padding: 34px 0;
+      border-bottom: 1px solid #d9d0c0;
+    }
+    .sticky { position: sticky; top: 18px; align-self: start; }
+    .kicker {
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .controls {
+      display: grid;
+      gap: 16px;
+      margin-top: 22px;
+    }
+    .redraft-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid #111827;
+      border-radius: 8px;
+      background: #111827;
+      color: white;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 22px rgba(24, 33, 47, .18);
+    }
+    .redraft-action:hover { background: #273244; }
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    button {
+      min-height: 40px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:last-child { border-right: 0; }
+    button.active { background: var(--ink); color: white; }
+    label {
+      display: grid;
+      grid-template-columns: 1fr 52px;
+      gap: 10px;
+      align-items: center;
+      color: #30394a;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    input[type="range"] {
+      grid-column: 1 / -1;
+      width: 100%;
+      accent-color: var(--blue);
+    }
+    .chart-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 620px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(40, 35, 25, .08);
+    }
+    .draft-stage {
+      display: grid;
+      grid-template-columns: minmax(180px, 230px) minmax(180px, 1fr) minmax(180px, 230px);
+      gap: 10px;
+      min-height: 580px;
+      position: relative;
+      margin-top: 18px;
+    }
+    .draft-col {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+    }
+    .draft-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 0 4px 10px;
+    }
+    .draft-stack {
+      position: relative;
+      min-height: 570px;
+    }
+    .draft-card {
+      position: absolute;
+      left: 0;
+      right: 0;
+      min-height: 42px;
+      border: 1px solid #dce2eb;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 5px 14px rgba(24, 33, 47, .08);
+      display: grid;
+      grid-template-columns: 30px 30px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 10px;
+      transition: top .55s cubic-bezier(.2,.8,.2,1), transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+      cursor: default;
+      z-index: 2;
+    }
+    .draft-card:hover,
+    .draft-card.focused {
+      transform: translateY(-2px);
+      border-color: #9aaede;
+      box-shadow: 0 10px 24px rgba(24, 33, 47, .16);
+      z-index: 4;
+    }
+    .draft-card .pick {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #eef2f8;
+      color: #445066;
+      font-size: 12px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .draft-card img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 2px rgba(24, 33, 47, .12));
+    }
+    .draft-card .skill-name {
+      min-width: 0;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .draft-card small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .draft-card.locked {
+      opacity: .72;
+      box-shadow: none;
+    }
+    .draft-card.up .pick { background: #e9f8f3; color: var(--green); }
+    .draft-card.down .pick { background: #fff0ee; color: var(--red); }
+    .draft-card.same .pick { background: #f7f1df; color: var(--gold); }
+    .draft-center {
+      position: relative;
+      display: grid;
+      align-items: center;
+      min-width: 0;
+    }
+    .draft-links {
+      width: 100%;
+      height: 100%;
+      min-height: 570px;
+      overflow: visible;
+    }
+    .draft-link {
+      fill: none;
+      stroke: #a8b2c3;
+      stroke-width: 2;
+      opacity: .28;
+      transition: opacity .18s ease, stroke-width .18s ease, stroke .18s ease;
+    }
+    .draft-link.up { stroke: var(--green); }
+    .draft-link.down { stroke: var(--red); }
+    .draft-link.focused {
+      opacity: .95;
+      stroke-width: 4;
+    }
+    .board-caption {
+      position: absolute;
+      inset: auto 12px 16px;
+      margin: 0 auto;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 28px rgba(24, 33, 47, .12);
+      color: #384357;
+      font-size: 13px;
+    }
+    .insight-lab {
+      display: grid;
+      grid-template-columns: minmax(260px, .7fr) minmax(300px, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .selected-card,
+    .mover-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+      padding: 16px;
+      min-width: 0;
+    }
+    .selected-card h3,
+    .mover-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .selected-card strong {
+      display: block;
+      font-size: 32px;
+      line-height: 1;
+      margin: 4px 0 8px;
+    }
+    .verdict {
+      color: #4b5567;
+      font-size: 14px;
+      min-height: 58px;
+    }
+    .anatomy {
+      display: grid;
+      gap: 12px;
+    }
+    .measure {
+      display: grid;
+      grid-template-columns: 96px 1fr 52px;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: #42506a;
+      font-weight: 800;
+    }
+    .measure-track {
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #eef2f8, #dce5f5);
+      position: relative;
+    }
+    .measure-dot {
+      position: absolute;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      transform: translate(-50%, -50%);
+      border: 3px solid white;
+      border-radius: 999px;
+      background: var(--blue);
+      box-shadow: 0 2px 8px rgba(24, 33, 47, .24);
+      transition: left .35s ease;
+    }
+    .measure:nth-child(2) .measure-dot { background: var(--green); }
+    .measure:nth-child(3) .measure-dot { background: var(--gold); }
+    .movers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .mover {
+      border: 1px solid #e4e9f1;
+      border-radius: 8px;
+      background: white;
+      min-height: 72px;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .mover b {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 3px;
+    }
+    .mover span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mover.up b { color: var(--green); }
+    .mover.down b { color: var(--red); }
+    .score-grid {
+      display: grid;
+      grid-template-columns: 56px minmax(110px, 150px) 1fr 76px;
+      gap: 8px;
+      align-items: center;
+    }
+    .row {
+      min-height: 42px;
+      border-bottom: 1px solid #eef1f5;
+      position: relative;
+    }
+    .row:hover { background: #fafbfc; }
+    .rank { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+    .name { font-weight: 800; }
+    .bar-track {
+      height: 24px;
+      background: #edf1f6;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar {
+      height: 100%;
+      border-radius: 5px;
+      transition: width .45s ease, background .2s ease;
+    }
+    .score { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .move {
+      display: inline-block;
+      min-width: 34px;
+      margin-left: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .move.up { color: var(--green); }
+    .move.down { color: var(--red); }
+    .formula {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 82px;
+      background: #fbfcfe;
+    }
+    .metric b { display: block; font-size: 24px; }
+    .metric span { color: var(--muted); font-size: 12px; }
+    .scatter {
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,255,255,.08) 1px, transparent 1px),
+        #111827;
+      background-size: 72px 72px;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 520px;
+      color: white;
+      position: relative;
+    }
+    svg { width: 100%; height: auto; display: block; }
+    .axis { stroke: rgba(255,255,255,.32); stroke-width: 1; }
+    .tick { fill: rgba(255,255,255,.72); font-size: 12px; }
+    .role-label { fill: white; font-size: 11px; paint-order: stroke; stroke: #111827; stroke-width: 4px; stroke-linejoin: round; }
+    .route {
+      fill: none;
+      stroke: rgba(255,255,255,.36);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 7 9;
+    }
+    .route.hot {
+      stroke: rgba(88,166,255,.72);
+      stroke-width: 4;
+    }
+    .map-zone {
+      fill: rgba(255,255,255,.06);
+      stroke: rgba(255,255,255,.12);
+      stroke-width: 1;
+    }
+    .zone-label {
+      fill: rgba(255,255,255,.58);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .insight {
+      margin-top: 18px;
+      padding: 16px;
+      border-left: 5px solid var(--gold);
+      background: #fffaf0;
+      border-radius: 4px;
+      color: #3f3523;
+    }
+    .score-list {
+      margin-top: 18px;
+      border-top: 1px solid #edf0f5;
+      padding-top: 10px;
+    }
+    .path-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .path {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 150px;
+    }
+    .path h3 { margin: 0 0 8px; font-size: 16px; }
+    .path p { color: #465164; font-size: 14px; }
+    .path.active {
+      border-color: #9aaede;
+      box-shadow: 0 10px 26px rgba(24, 33, 47, .14);
+    }
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      transform: translate(12px, 12px);
+      max-width: 280px;
+      padding: 10px 12px;
+      background: rgba(24, 33, 47, .94);
+      color: white;
+      border-radius: 6px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity .12s ease;
+      z-index: 20;
+    }
+    .tooltip.visible { opacity: 1; }
+    @media (max-width: 820px) {
+      header, .section { grid-template-columns: 1fr; }
+      .sticky { position: static; }
+      .formula, .path-list { grid-template-columns: 1fr; }
+      .draft-stage {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+      .draft-center { display: none; }
+      .draft-stack { min-height: 570px; }
+      .insight-lab { grid-template-columns: 1fr; }
+      .measure { grid-template-columns: 82px 1fr 46px; }
+      .score-grid { grid-template-columns: 44px 110px 1fr 56px; }
+      .chart-wrap { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="kicker">Q3 Prototype</div>
+        <h1>Developer Skill Redraft</h1>
+      </div>
+      <div>
+        <p class="lede">If developers drafted their next skill for the AI era, the board would not simply follow today's popularity. It would mix market size, growth momentum, and AI leverage.</p>
+        <p class="source">Sources: Stack Overflow Developer Survey 2025, GitHub Innovation Graph, inspired by The Pudding's NBA redraft story.</p>
+      </div>
+    </header>
+
+    <section class="section">
+      <aside class="sticky">
+        <div class="kicker">Plan</div>
+        <h2>Use a redraft, not a checklist.</h2>
+        <p>Start with a familiar ranking, then reveal why the AI-era ranking changes. This turns Q3 from advice into evidence: what looks safe, what is rising, and what depends on the user's career stage.</p>
+        <div class="controls">
+          <div class="segmented" aria-label="Persona selector">
+            <button class="persona active" data-persona="seeker">Job Seeker</button>
+            <button class="persona" data-persona="junior">Junior</button>
+            <button class="persona" data-persona="senior">Senior</button>
+          </div>
+          <label>Popularity <output id="w-pop">35</output><input id="pop" type="range" min="0" max="70" value="35"></label>
+          <label>Momentum <output id="w-growth">40</output><input id="growth" type="range" min="0" max="70" value="40"></label>
+          <label>AI adjacency <output id="w-ai">25</output><input id="ai" type="range" min="0" max="70" value="25"></label>
+          <button class="redraft-action" id="redraft-button" type="button">AI Era Redraft</button>
+        </div>
+      </aside>
+
+      <div class="chart-wrap">
+        <div class="formula">
+          <div class="metric"><b id="top-skill">TypeScript</b><span>top redraft pick under current weights</span></div>
+          <div class="metric"><b id="top-growth">+611%</b><span>largest GitHub pusher growth, 2020 Q1 to 2025 Q4</span></div>
+          <div class="metric"><b id="ai-note">84%</b><span>SO respondents using or planning AI tools in 2025</span></div>
+        </div>
+        <div class="draft-stage" aria-live="polite">
+          <div class="draft-col">
+            <div class="draft-title"><span>Original board</span><span>SO 2025</span></div>
+            <div class="draft-stack" id="original-board"></div>
+          </div>
+          <div class="draft-center">
+            <svg class="draft-links" id="draft-links" role="img" aria-label="Movement from current popularity rank to AI-era redraft rank"></svg>
+            <p class="board-caption" id="board-caption">Each line is a skill moving from today's popularity rank to its AI-era preparation rank. Green climbs, red falls.</p>
+          </div>
+          <div class="draft-col">
+            <div class="draft-title"><span id="right-board-title">Current board</span><span id="persona-label">Before</span></div>
+            <div class="draft-stack" id="redraft-board"></div>
+          </div>
+        </div>
+        <div class="insight-lab">
+          <div class="selected-card">
+            <h3>Preparedness anatomy</h3>
+            <strong id="selected-skill">TypeScript</strong>
+            <p class="verdict" id="skill-verdict"></p>
+          </div>
+          <div class="mover-card">
+            <h3>Why this pick moves</h3>
+            <div class="anatomy">
+              <div class="measure"><span>Popularity</span><div class="measure-track"><i class="measure-dot" id="dot-usage"></i></div><output id="val-usage">0</output></div>
+              <div class="measure"><span>Momentum</span><div class="measure-track"><i class="measure-dot" id="dot-growth"></i></div><output id="val-growth">0</output></div>
+              <div class="measure"><span>AI fit</span><div class="measure-track"><i class="measure-dot" id="dot-ai"></i></div><output id="val-ai">0</output></div>
+            </div>
+            <div class="movers" id="movers"></div>
+          </div>
+        </div>
+        <div class="score-list" id="ranking"></div>
+        <div class="insight" id="ranking-note"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <aside class="sticky">
+        <div class="kicker">Career Path</div>
+        <h2>Skills have to land somewhere.</h2>
+        <p>After the skill redraft, move to roles. Salary and experience show where the preparation pays off: some tracks are direct AI roles, while others are judgment-heavy roles made more valuable by AI adoption.</p>
+      </aside>
+      <div>
+        <div class="scatter">
+          <svg id="roles" viewBox="0 0 820 500" role="img" aria-label="Median salary by average years of experience for developer roles"></svg>
+        </div>
+        <div class="path-list">
+          <div class="path active" data-path="seeker"><h3>Job Seeker</h3><p>Build a portfolio around Python, TypeScript, SQL/data, and one deployable AI-assisted product. Show review notes, not just generated code.</p></div>
+          <div class="path" data-path="junior"><h3>Junior</h3><p>Use AI daily, but make debugging, testing, and reading unfamiliar code the core skill. The weakness to beat is "almost right" output.</p></div>
+          <div class="path" data-path="senior"><h3>Senior</h3><p>Move toward architecture, security, data quality, and mentoring. AI makes execution cheaper, so judgment and accountability become the premium layer.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="tooltip" id="tip"></div>
+
+  <script>
+    const skills = [
+      {name:"JavaScript", slug:"javascript", usage:66.0, growth:186.4, ai:70, note:"Huge installed base; AI value appears through product, web, and automation workflows."},
+      {name:"Python", slug:"python", usage:57.9, growth:253.6, ai:100, note:"Strong use and strong AI/data fit; Stack Overflow calls out Python's AI and data science pull."},
+      {name:"Shell", slug:"bash", usage:48.7, growth:139.5, ai:50, note:"Less glamorous, but automation glue matters when AI tools enter build and ops workflows."},
+      {name:"TypeScript", slug:"typescript", usage:43.6, growth:610.7, ai:82, note:"The fastest growing major language in this board; strong fit for AI-enabled product interfaces."},
+      {name:"Java", slug:"java", usage:29.4, growth:44.1, ai:55, note:"Durable enterprise base, but weaker momentum in public GitHub growth."},
+      {name:"C#", slug:"csharp", usage:27.8, growth:79.8, ai:45, note:"Stable professional ecosystem; less of a pure AI-era growth signal here."},
+      {name:"C++", slug:"cplusplus", usage:23.5, growth:119.7, ai:60, note:"Useful for performance-heavy systems, model serving, engines, and embedded contexts."},
+      {name:"C", slug:"c", usage:22.0, growth:143.4, ai:45, note:"Infrastructure and embedded value, but fewer direct AI-product signals."},
+      {name:"PHP", slug:"php", usage:18.9, growth:55.4, ai:25, note:"Still used, but lower growth and AI adjacency make it a conservative pick."},
+      {name:"Go", slug:"go", usage:16.4, growth:155.2, ai:65, note:"Good infra/cloud fit; useful for AI systems that need services, pipelines, and deployment."},
+      {name:"Rust", slug:"rust", usage:14.8, growth:532.2, ai:72, note:"Small current share, very high growth; attractive for tooling, infra, and reliability-sensitive work."},
+      {name:"Kotlin", slug:"kotlin", usage:9.6, growth:276.1, ai:45, note:"Mobile and JVM path with solid growth, but less direct AI signal in this prototype."}
+    ];
+    const roles = [
+      {role:"AI/ML engineer", salary:92812, years:11.15, leverage:92},
+      {role:"Data engineer", salary:81210, years:12.13, leverage:82},
+      {role:"Data scientist", salary:85769, years:11.52, leverage:88},
+      {role:"Cloud infrastructure engineer", salary:103833, years:13.05, leverage:78},
+      {role:"DevOps engineer", salary:88025, years:14.27, leverage:72},
+      {role:"Cybersecurity", salary:97183, years:14.15, leverage:76},
+      {role:"Architect", salary:104015, years:19.70, leverage:86},
+      {role:"Engineering manager", salary:133417, years:18.08, leverage:74},
+      {role:"Back-end developer", salary:81210, years:12.71, leverage:64},
+      {role:"Full-stack developer", salary:74878, years:12.67, leverage:66},
+      {role:"Front-end developer", salary:63808, years:10.52, leverage:58},
+      {role:"Mobile developer", salary:70860, years:11.73, leverage:54},
+      {role:"QA/test developer", salary:58007, years:11.23, leverage:62},
+      {role:"Student", salary:14038, years:4.23, leverage:45}
+    ];
+    const presets = {
+      seeker: {pop:35, growth:40, ai:25, note:"For job seekers, TypeScript and Python rise because they combine broad demand with strong growth. The recommendation is not one language; it is a portfolio stack."},
+      junior: {pop:25, growth:35, ai:40, note:"For juniors, AI adjacency matters more. Python becomes safer, TypeScript remains a high-upside product skill, and Rust is a stretch pick rather than a first pick."},
+      senior: {pop:20, growth:20, ai:60, note:"For seniors, the redraft rewards judgment-heavy AI leverage. Python becomes the center, while infra languages remain relevant when paired with architecture, review, and security."}
+    };
+    const colors = ["#2662d9", "#168566", "#c78916", "#c6453d", "#7b4ab7"];
+    const tip = document.getElementById("tip");
+    const state = {persona:"seeker", pop:35, growth:40, ai:25, selected:"TypeScript", redrafted:false};
+    const max = {
+      usage: Math.max(...skills.map(d => d.usage)),
+      growth: Math.max(...skills.map(d => d.growth)),
+      ai: 100
+    };
+    function score(d) {
+      const total = Math.max(1, state.pop + state.growth + state.ai);
+      return (
+        state.pop * (d.usage / max.usage) +
+        state.growth * (d.growth / max.growth) +
+        state.ai * (d.ai / max.ai)
+      ) / total * 100;
+    }
+    function popularityRank(name) {
+      return [...skills].sort((a,b) => b.usage - a.usage).findIndex(d => d.name === name) + 1;
+    }
+    function personaName() {
+      return document.querySelector(`.persona[data-persona="${state.persona}"]`)?.textContent || "Custom";
+    }
+    function movementClass(move) {
+      if (move > 0) return "up";
+      if (move < 0) return "down";
+      return "same";
+    }
+    function logoUrl(d) {
+      return `https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/${d.slug}/${d.slug}-original.svg`;
+    }
+    function cardHtml(d, rank, caption, move, locked=false) {
+      const cls = movementClass(move);
+      return `<div class="draft-card ${cls} ${locked ? "locked" : ""}" style="top:${(rank - 1) * 46}px" data-skill="${d.name}" data-name="${d.name}" data-note="${d.note}" data-meta="Usage ${d.usage}%, GitHub growth +${d.growth}%, AI adjacency ${d.ai}/100">
+        <div class="pick">${rank}</div>
+        <img src="${logoUrl(d)}" alt="" loading="lazy">
+        <div><div class="skill-name">${d.name}</div><small>${caption}</small></div>
+      </div>`;
+    }
+    function updateBoardCards(containerId, items) {
+      const container = document.getElementById(containerId);
+      const existing = new Map([...container.querySelectorAll(".draft-card")].map(el => [el.dataset.skill, el]));
+      const nextNames = new Set(items.map(d => d.name));
+      [...existing.entries()].forEach(([name, el]) => {
+        if (!nextNames.has(name)) el.remove();
+      });
+      items.forEach(d => {
+        let el = existing.get(d.name);
+        if (!el) {
+          container.insertAdjacentHTML("beforeend", cardHtml(d, d.displayRank, d.caption, d.move, d.locked));
+          el = container.querySelector(`.draft-card[data-skill="${CSS.escape(d.name)}"]`);
+        }
+        el.style.top = `${(d.displayRank - 1) * 46}px`;
+        el.classList.toggle("up", d.move > 0);
+        el.classList.toggle("down", d.move < 0);
+        el.classList.toggle("same", d.move === 0);
+        el.classList.toggle("locked", d.locked);
+        el.querySelector(".pick").textContent = d.displayRank;
+        el.querySelector("small").textContent = d.caption;
+        el.dataset.note = d.note;
+        el.dataset.meta = `Usage ${d.usage}%, GitHub growth +${d.growth}%, AI adjacency ${d.ai}/100`;
+      });
+    }
+    function renderDraftBoard(ranked) {
+      const original = [...skills].sort((a,b) => b.usage - a.usage).map((d, i) => ({...d, rank:i + 1}));
+      const rankedByName = new Map(ranked.map((d, i) => [d.name, {...d, rank:i + 1}]));
+      document.getElementById("right-board-title").textContent = state.redrafted ? "AI-era redraft" : "Current board";
+      document.getElementById("persona-label").textContent = state.redrafted ? personaName() : "Before";
+      document.getElementById("redraft-button").textContent = state.redrafted ? "Redraft Again" : "AI Era Redraft";
+      updateBoardCards("original-board", original.map(d => {
+        const redraft = rankedByName.get(d.name);
+        const move = d.rank - redraft.rank;
+        return {...d, displayRank:d.rank, caption:`${d.usage}% used`, move, locked:false};
+      }));
+      const rightItems = original.map(d => {
+        const redraft = rankedByName.get(d.name);
+        const rank = state.redrafted ? redraft.rank : d.rank;
+        const move = d.rank - redraft.rank;
+        const label = state.redrafted
+          ? (move > 0 ? `climbs ${move}` : move < 0 ? `falls ${Math.abs(move)}` : "holds")
+          : "waiting for redraft";
+        const scoreLabel = state.redrafted ? ` | score ${redraft.score.toFixed(0)}` : "";
+        return {...d, displayRank:rank, caption:`${label}${scoreLabel}`, move, locked:!state.redrafted};
+      });
+      updateBoardCards("redraft-board", rightItems);
+      const svg = document.getElementById("draft-links");
+      const w = Math.max(240, Math.round(svg.getBoundingClientRect().width || 320));
+      const h = 530;
+      const y = rank => (rank - 1) * 44 + 19;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.innerHTML = original.map((d) => {
+        const redraft = rankedByName.get(d.name);
+        const rank = state.redrafted ? redraft.rank : d.rank;
+        const move = d.rank - redraft.rank;
+        const cls = movementClass(move);
+        const y1 = y(d.rank);
+        const y2 = y(rank);
+        const c1 = w * .35;
+        const c2 = w * .65;
+        return `<path class="draft-link ${cls}" data-skill="${d.name}" d="M 0 ${y1} C ${c1} ${y1}, ${c2} ${y2}, ${w} ${y2}"></path>`;
+      }).join("");
+      const focus = (skill, on) => {
+        document.querySelectorAll(`[data-skill="${skill}"]`).forEach(el => el.classList.toggle("focused", on));
+      };
+      document.querySelectorAll(".draft-card").forEach(el => {
+        el.addEventListener("mousemove", event => {
+          focus(el.dataset.skill, true);
+          showTip(event);
+        });
+        el.addEventListener("mouseleave", () => {
+          focus(el.dataset.skill, false);
+          hideTip();
+        });
+        el.addEventListener("click", () => {
+          state.selected = el.dataset.skill;
+          renderRanking();
+        });
+      });
+    }
+    function renderInsightLab(ranked) {
+      if (!state.redrafted) {
+        document.getElementById("selected-skill").textContent = "Press Redraft";
+        document.getElementById("skill-verdict").textContent = "Start with the familiar popularity board. Then press AI Era Redraft to see which skills move when popularity, GitHub momentum, and AI fit are combined.";
+        ["usage","growth","ai"].forEach(key => {
+          document.getElementById(`dot-${key}`).style.left = "0%";
+          document.getElementById(`val-${key}`).value = "-";
+        });
+        document.getElementById("movers").innerHTML = "";
+        return;
+      }
+      if (!ranked.some(d => d.name === state.selected)) state.selected = ranked[0].name;
+      const selected = ranked.find(d => d.name === state.selected);
+      const move = selected.original - (ranked.findIndex(d => d.name === selected.name) + 1);
+      const moveText = move > 0 ? `climbs ${move} places` : move < 0 ? `falls ${Math.abs(move)} places` : "holds its rank";
+      const usagePct = selected.usage / max.usage * 100;
+      const growthPct = selected.growth / max.growth * 100;
+      const aiPct = selected.ai;
+      document.getElementById("selected-skill").textContent = selected.name;
+      document.getElementById("skill-verdict").textContent = `${selected.name} ${moveText} because its current adoption, GitHub momentum, and AI fit combine differently for ${personaName()}. ${selected.note}`;
+      document.getElementById("dot-usage").style.left = `${usagePct}%`;
+      document.getElementById("dot-growth").style.left = `${growthPct}%`;
+      document.getElementById("dot-ai").style.left = `${aiPct}%`;
+      document.getElementById("val-usage").value = `${selected.usage}%`;
+      document.getElementById("val-growth").value = `+${Math.round(selected.growth)}%`;
+      document.getElementById("val-ai").value = selected.ai;
+      document.querySelectorAll(`[data-skill="${selected.name}"]`).forEach(el => el.classList.add("focused"));
+      const enriched = ranked.map((d, i) => ({...d, redraft:i + 1, move:d.original - (i + 1)}));
+      const topUp = [...enriched].sort((a,b) => b.move - a.move)[0];
+      const topDown = [...enriched].sort((a,b) => a.move - b.move)[0];
+      document.getElementById("movers").innerHTML = [topUp, topDown].map(d => {
+        const cls = movementClass(d.move);
+        const label = d.move > 0 ? `up ${d.move}` : d.move < 0 ? `down ${Math.abs(d.move)}` : "flat";
+        return `<div class="mover ${cls}" data-skill="${d.name}"><b>${d.name}</b><span>${label} from #${d.original} to #${d.redraft}</span></div>`;
+      }).join("");
+      document.querySelectorAll(".mover").forEach(el => {
+        el.addEventListener("click", () => {
+          state.selected = el.dataset.skill;
+          renderRanking();
+        });
+      });
+    }
+    function renderRanking() {
+      document.getElementById("w-pop").value = state.pop;
+      document.getElementById("w-growth").value = state.growth;
+      document.getElementById("w-ai").value = state.ai;
+      const ranked = [...skills].map(d => ({...d, score: score(d), original: popularityRank(d.name)})).sort((a,b) => b.score - a.score);
+      document.getElementById("top-skill").textContent = ranked[0].name;
+      document.getElementById("ranking-note").textContent = presets[state.persona].note;
+      renderDraftBoard(ranked);
+      renderInsightLab(ranked);
+      const html = ranked.map((d, i) => {
+        const move = d.original - (i + 1);
+        const cls = move > 0 ? "up" : move < 0 ? "down" : "";
+        const label = move > 0 ? `+${move}` : `${move}`;
+        const color = d.ai > 75 ? colors[0] : d.growth > 250 ? colors[1] : d.usage > 40 ? colors[2] : d.growth < 80 ? colors[3] : colors[4];
+        return `<div class="score-grid row" data-name="${d.name}" data-note="${d.note}" data-meta="Usage ${d.usage}%, GitHub growth +${d.growth}%, AI adjacency ${d.ai}/100">
+          <div class="rank">#${i + 1}<span class="move ${cls}">${label}</span></div>
+          <div class="name">${d.name}</div>
+          <div class="bar-track"><div class="bar" style="width:${d.score.toFixed(1)}%; background:${color};"></div></div>
+          <div class="score">${d.score.toFixed(0)}</div>
+        </div>`;
+      }).join("");
+      document.getElementById("ranking").innerHTML = html;
+      document.querySelectorAll(".row").forEach(el => {
+        el.addEventListener("mousemove", showTip);
+        el.addEventListener("mouseleave", hideTip);
+        el.addEventListener("click", () => {
+          state.selected = el.dataset.name;
+          renderRanking();
+        });
+      });
+      document.querySelectorAll(".path").forEach(el => el.classList.toggle("active", el.dataset.path === state.persona));
+      renderRoles();
+    }
+    function showTip(event) {
+      tip.innerHTML = `<b>${event.currentTarget.dataset.name}</b><br>${event.currentTarget.dataset.meta}<br>${event.currentTarget.dataset.note}`;
+      tip.style.left = event.clientX + "px";
+      tip.style.top = event.clientY + "px";
+      tip.classList.add("visible");
+    }
+    function hideTip() { tip.classList.remove("visible"); }
+    function setPreset(name) {
+      Object.assign(state, presets[name], {persona:name});
+      document.getElementById("pop").value = state.pop;
+      document.getElementById("growth").value = state.growth;
+      document.getElementById("ai").value = state.ai;
+      document.querySelectorAll(".persona").forEach(b => b.classList.toggle("active", b.dataset.persona === name));
+      document.querySelectorAll(".path").forEach(el => el.classList.toggle("active", el.dataset.path === name));
+      renderRanking();
+    }
+    document.querySelectorAll(".persona").forEach(btn => btn.addEventListener("click", () => setPreset(btn.dataset.persona)));
+    document.getElementById("redraft-button").addEventListener("click", () => {
+      if (state.redrafted) {
+        state.redrafted = false;
+        renderRanking();
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            state.redrafted = true;
+            renderRanking();
+          }, 80);
+        });
+      } else {
+        state.redrafted = true;
+        renderRanking();
+      }
+    });
+    ["pop", "growth", "ai"].forEach(id => {
+      document.getElementById(id).addEventListener("input", e => {
+        state[id] = Number(e.target.value);
+        renderRanking();
+      });
+    });
+    function renderRoles() {
+      const svg = document.getElementById("roles");
+      const w = 820, h = 500, m = {l:70, r:28, t:24, b:58};
+      const maxYears = 22, minSalary = 10000, maxSalary = 145000;
+      const x = v => m.l + (v / maxYears) * (w - m.l - m.r);
+      const y = v => h - m.b - ((v - minSalary) / (maxSalary - minSalary)) * (h - m.t - m.b);
+      const r = v => 5 + (v / 100) * 10;
+      let parts = [];
+      parts.push(`<line class="axis" x1="${m.l}" y1="${h-m.b}" x2="${w-m.r}" y2="${h-m.b}"></line>`);
+      parts.push(`<line class="axis" x1="${m.l}" y1="${m.t}" x2="${m.l}" y2="${h-m.b}"></line>`);
+      parts.push(`<rect class="map-zone" x="${x(10)}" y="${m.t}" width="${w - m.r - x(10)}" height="${y(90000) - m.t}" rx="12"></rect>`);
+      parts.push(`<text class="zone-label" x="${x(10)+16}" y="${m.t+28}">AI leverage zone</text>`);
+      parts.push(`<rect class="map-zone" x="${m.l}" y="${y(90000)}" width="${x(10)-m.l}" height="${h-m.b-y(90000)}" rx="12"></rect>`);
+      parts.push(`<text class="zone-label" x="${m.l+16}" y="${y(90000)+28}">Entry ramp</text>`);
+      [0,5,10,15,20].forEach(t => parts.push(`<text class="tick" x="${x(t)}" y="${h-24}" text-anchor="middle">${t}</text>`));
+      [25000,50000,75000,100000,125000].forEach(t => parts.push(`<text class="tick" x="8" y="${y(t)+4}">$${Math.round(t/1000)}k</text><line class="axis" x1="${m.l}" y1="${y(t)}" x2="${w-m.r}" y2="${y(t)}" opacity=".32"></line>`));
+      parts.push(`<text class="tick" x="${w/2}" y="${h-6}" text-anchor="middle">Average years of professional experience</text>`);
+      parts.push(`<text class="tick" transform="translate(16 ${h/2}) rotate(-90)" text-anchor="middle">Median yearly salary, USD</text>`);
+      const byRole = Object.fromEntries(roles.map(d => [d.role, d]));
+      const routePath = names => names.map((name, index) => {
+        const d = byRole[name];
+        return `${index === 0 ? "M" : "L"} ${x(d.years)} ${y(d.salary)}`;
+      }).join(" ");
+      const routes = [
+        {id:"seeker", names:["Student","Full-stack developer","Cloud infrastructure engineer","DevOps engineer"]},
+        {id:"junior", names:["Student","Data engineer","Data scientist","AI/ML engineer"]},
+        {id:"senior", names:["Student","AI/ML engineer","Architect","Engineering manager"]}
+      ];
+      routes.forEach(route => {
+        parts.push(`<path class="route ${route.id === state.persona ? "hot" : ""}" d="${routePath(route.names)}"></path>`);
+      });
+      roles.forEach(d => {
+        const fill = d.leverage > 84 ? "#58a6ff" : d.leverage > 72 ? "#2ec27e" : d.leverage > 60 ? "#e3b341" : "#d66a5c";
+        parts.push(`<circle cx="${x(d.years)}" cy="${y(d.salary)}" r="${r(d.leverage)+6}" fill="${fill}" opacity=".12"></circle>`);
+        parts.push(`<circle cx="${x(d.years)}" cy="${y(d.salary)}" r="${r(d.leverage)}" fill="${fill}" opacity=".86"><title>${d.role}: $${d.salary.toLocaleString()}, ${d.years.toFixed(1)} years</title></circle>`);
+        if (d.leverage > 74 || d.role === "Engineering manager") {
+          parts.push(`<text class="role-label" x="${x(d.years)+12}" y="${y(d.salary)-8}">${d.role}</text>`);
+        }
+      });
+      svg.innerHTML = parts.join("");
+    }
+    renderRanking();
+    renderRoles();
+  </script>
+</body>
+</html>
