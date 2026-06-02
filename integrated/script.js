@@ -693,29 +693,74 @@ const clusterRadius = d3.scaleSqrt()
   .domain(d3.extent(clusterSubs, d => d.count))
   .range([16, 62]);
 const clusterGroup = clusterSvg.append("g");
-const clusterNodes = clusterSubs.map((d, i) => ({
-  ...d,
-  x: clusterW / 2 + Math.cos(i) * 80,
-  y: clusterH / 2 + Math.sin(i) * 80,
-  r: clusterRadius(d.count)
-}));
+const clusterLayout = {
+  problem: { x: 420, y: 205, labelX: 300, labelY: 92 },
+  design: { x: 622, y: 236, labelX: 690, labelY: 176 },
+  comm: { x: 640, y: 382, labelX: 720, labelY: 438 },
+  domain: { x: 512, y: 468, labelX: 556, labelY: 558 },
+  fund: { x: 306, y: 456, labelX: 210, labelY: 558 },
+  ai: { x: 202, y: 362, labelX: 118, labelY: 405 },
+  adapt: { x: 230, y: 220, labelX: 120, labelY: 178 }
+};
 clusterCats.forEach((cat, i) => {
   const angle = i / clusterCats.length * Math.PI * 2 - Math.PI / 2;
-  cat.anchorX = clusterW / 2 + Math.cos(angle) * 260;
-  cat.anchorY = clusterH / 2 + Math.sin(angle) * 210;
-  const labelOffsets = {
-    problem: { x: -118, y: -70 },
-    design: { x: 92, y: -48 },
-    comm: { x: 92, y: 38 },
-    domain: { x: 70, y: 82 },
-    fund: { x: -72, y: 82 },
-    ai: { x: -92, y: 38 },
-    adapt: { x: -92, y: -48 }
+  const layout = clusterLayout[cat.id] || {
+    x: clusterW / 2 + Math.cos(angle) * 260,
+    y: clusterH / 2 + Math.sin(angle) * 210
   };
-  const offset = labelOffsets[cat.id] || { x: Math.cos(angle) * 72, y: Math.sin(angle) * 72 };
-  cat.labelX = cat.anchorX + offset.x;
-  cat.labelY = cat.anchorY + offset.y;
+  cat.anchorX = layout.x;
+  cat.anchorY = layout.y;
+  cat.labelX = layout.labelX || layout.x + Math.cos(angle) * 92;
+  cat.labelY = layout.labelY || layout.y + Math.sin(angle) * 92;
 });
+const mainProblemCluster = d3.greatest(
+  clusterSubs.filter(d => d.cat === "problem"),
+  d => d.count
+);
+const clusterNodes = clusterSubs.map((d, i) => {
+  const cat = clusterCatById[d.cat] || { anchorX: clusterW / 2, anchorY: clusterH / 2 };
+  const siblings = clusterSubs.filter(s => s.cat === d.cat);
+  const localIndex = siblings.findIndex(s => s.id === d.id);
+  const angle = localIndex / Math.max(1, siblings.length) * Math.PI * 2 + (i % 2 ? .24 : -.18);
+  const distance = 34 + (localIndex % 4) * 18 + clusterRadius(d.count) * .34;
+  const isMainProblem = d.id === mainProblemCluster?.id;
+  return {
+    ...d,
+    x: isMainProblem ? cat.anchorX : cat.anchorX + Math.cos(angle) * distance,
+    y: isMainProblem ? cat.anchorY : cat.anchorY + Math.sin(angle) * distance,
+    fx: isMainProblem ? cat.anchorX : null,
+    fy: isMainProblem ? cat.anchorY : null,
+    r: clusterRadius(d.count),
+    isMainProblem
+  };
+});
+const clusterHullLayer = clusterGroup.append("g").attr("class", "cluster-hull-layer");
+const clusterNodeLayer = clusterGroup.append("g").attr("class", "cluster-node-layer");
+const clusterLabelLayer = clusterGroup.append("g").attr("class", "cluster-label-layer");
+function clusterHull(cat) {
+  const nodes = clusterNodes.filter(d => d.cat === cat.id);
+  if (!nodes.length) {
+    return { ...cat, x: cat.anchorX, y: cat.anchorY, r: 0 };
+  }
+  const x = d3.mean(nodes, d => d.x);
+  const y = d3.mean(nodes, d => d.y);
+  const r = d3.max(nodes, d => Math.hypot(d.x - x, d.y - y) + d.r + 22);
+  return { ...cat, x, y, r };
+}
+const clusterHulls = clusterHullLayer.selectAll(".cluster-hull")
+  .data(clusterCats, d => d.id)
+  .join("circle")
+  .attr("class", "cluster-hull")
+  .attr("fill", d => d.color)
+  .attr("stroke", d => d.color)
+  .on("mouseenter", (event, d) => {
+    pulseClusterHull(d.id, true);
+    clusterSimulation.alphaTarget(.04).restart();
+  })
+  .on("mouseleave", (event, d) => {
+    pulseClusterHull(d.id, false);
+    clusterSimulation.alphaTarget(0);
+  });
 clusterSvg.append("g")
   .selectAll("text")
   .data(clusterCats)
@@ -726,33 +771,117 @@ clusterSvg.append("g")
   .style("fill", d => d.color)
   .text(d => d.name);
 const clusterSimulation = d3.forceSimulation(clusterNodes)
-  .force("charge", d3.forceManyBody().strength(8))
-  .force("collide", d3.forceCollide(d => d.r + 4))
-  .force("x", d3.forceX(d => clusterCatById[d.cat]?.anchorX || clusterW / 2).strength(.12))
-  .force("y", d3.forceY(d => clusterCatById[d.cat]?.anchorY || clusterH / 2).strength(.12))
+  .force("charge", d3.forceManyBody().strength(5))
+  .force("collide", d3.forceCollide(d => d.r + 6))
+  .force("x", d3.forceX(d => clusterCatById[d.cat]?.anchorX || clusterW / 2).strength(.18))
+  .force("y", d3.forceY(d => clusterCatById[d.cat]?.anchorY || clusterH / 2).strength(.18))
   .on("tick", () => {
+    clusterHulls
+      .each(function(d) {
+        const hull = clusterHull(d);
+        d3.select(this)
+          .attr("cx", hull.x)
+          .attr("cy", hull.y)
+          .attr("r", hull.r * (d.hullScale || 1));
+      });
     clusterCircles.attr("cx", d => d.x).attr("cy", d => d.y);
     clusterLabels.attr("x", d => d.x).attr("y", d => d.y + 4);
   });
-const clusterCircles = clusterGroup.selectAll("circle").data(clusterNodes, d => d.id).join("circle")
+function nudgeCluster(d) {
+  clusterNodes.forEach(node => {
+    if (node === d || node.cat !== d.cat) return;
+    const dx = node.x - d.x;
+    const dy = node.y - d.y;
+    const dist = Math.max(1, Math.hypot(dx, dy));
+    node.vx += dx / dist * .45;
+    node.vy += dy / dist * .45;
+  });
+  clusterSimulation.alphaTarget(.08).restart();
+}
+function pulseClusterHull(catId, active) {
+  clusterHulls
+    .filter(d => d.id === catId)
+    .transition()
+    .duration(active ? 170 : 420)
+    .ease(active ? d3.easeBackOut.overshoot(1.5) : d3.easeElasticOut.amplitude(.55).period(.48))
+    .tween("hull-scale", function(d) {
+      const node = d3.select(this);
+      const scale = d3.interpolateNumber(d.hullScale || 1, active ? 1.045 : 1);
+      return t => {
+        d.hullScale = scale(t);
+        const hull = clusterHull(d);
+        node
+          .attr("cx", hull.x)
+          .attr("cy", hull.y)
+          .attr("r", hull.r * d.hullScale);
+      };
+    });
+}
+const clusterCircles = clusterNodeLayer.selectAll("circle").data(clusterNodes, d => d.id).join("circle")
+  .attr("class", "cluster-bubble")
   .attr("r", d => d.r)
   .attr("fill", d => d.color)
   .attr("fill-opacity", .72)
   .attr("stroke", "#111827")
   .attr("stroke-width", 1.4)
+  .on("mouseenter", (event, d) => {
+    nudgeCluster(d);
+    pulseClusterHull(d.cat, true);
+    d3.select(event.currentTarget)
+      .raise()
+      .transition()
+      .duration(180)
+      .ease(d3.easeBackOut.overshoot(1.7))
+      .attr("r", d.r * 1.09)
+      .attr("fill-opacity", .86)
+      .attr("stroke-width", 2.4);
+  })
   .on("mousemove", (event, d) => {
     const terms = (d.terms || []).slice(0, 5).join(", ");
     const quote = d.quotes?.[0]?.t ? d.quotes[0].t.slice(0, 180) + (d.quotes[0].t.length > 180 ? "..." : "") : "";
     showTip(event, `<b>${d.name}</b><br>${d.catName} · ${d3.format(",")(d.count)} mentions<br>${terms}<br><br>${quote}`);
   })
-  .on("mouseleave", hideTip);
-const clusterLabels = clusterGroup.selectAll(".cluster-label").data(clusterNodes, d => d.id).join("text")
+  .on("mouseleave", (event, d) => {
+    hideTip();
+    pulseClusterHull(d.cat, false);
+    clusterSimulation.alphaTarget(0);
+    d3.select(event.currentTarget)
+      .transition()
+      .duration(260)
+      .ease(d3.easeElasticOut.amplitude(.7).period(.45))
+      .attr("r", d.r)
+      .attr("fill-opacity", .72)
+      .attr("stroke-width", 1.4);
+  })
+  .call(d3.drag()
+    .on("start", (event, d) => {
+      if (!event.active) clusterSimulation.alphaTarget(.12).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    })
+    .on("drag", (event, d) => {
+      d.fx = event.x;
+      d.fy = event.y;
+    })
+    .on("end", (event, d) => {
+      if (!event.active) clusterSimulation.alphaTarget(0);
+      d.fx = d.isMainProblem ? clusterCatById[d.cat]?.anchorX : null;
+      d.fy = d.isMainProblem ? clusterCatById[d.cat]?.anchorY : null;
+    }));
+const clusterLabels = clusterLabelLayer.selectAll(".cluster-label").data(clusterNodes, d => d.id).join("text")
   .attr("class", "cluster-label")
   .text(d => d3.format(",")(d.count));
 function renderClusters() {
   const filter = state.clusterFilter === "all"
     ? (state.persona === "senior" ? "senior" : state.persona === "junior" ? "junior" : "all")
     : state.clusterFilter;
+  const clusterActive = cat => {
+    const nodes = clusterNodes.filter(d => d.cat === cat.id);
+    if (filter === "senior") return d3.mean(nodes, d => d.seniorShare) >= .52;
+    if (filter === "junior") return d3.mean(nodes, d => d.juniorShare) >= .18;
+    return true;
+  };
+  clusterHulls.transition().duration(450).attr("opacity", d => clusterActive(d) ? 1 : .18);
   clusterCircles.transition().duration(450)
     .attr("opacity", d => {
       if (filter === "senior") return d.seniorShare >= .52 ? 1 : .2;

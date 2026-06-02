@@ -403,6 +403,20 @@ svg {
   stroke-opacity: 0.28;
   stroke-width: 1.2;
 }
+.cluster-hull {
+  fill-opacity: 0.06;
+  stroke-opacity: 0.28;
+  stroke-width: 1.3;
+  stroke-dasharray: 5 7;
+  cursor: pointer;
+  pointer-events: visiblePainted;
+}
+.cluster-bubble {
+  cursor: grab;
+}
+.cluster-bubble:active {
+  cursor: grabbing;
+}
 .cluster-label {
   fill: #111827;
   font-size: 12px;
