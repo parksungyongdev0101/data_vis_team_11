@@ -619,8 +619,8 @@
   <header class="hero">
     <div class="hero-inner">
       <div class="kicker">2026 Data Visualization Project</div>
-      <h1>Where do developers go in the AI era?</h1>
-      <p class="subtitle">A visual career report: the fear of AI is overblown, the pay-off is real, the real trap is verification — and here's the stack that still pays.</p>
+      <h1>Is AI really threatening developers&rsquo; jobs?</h1>
+      <p class="subtitle">Three years and tens of thousands of developers later, the data&rsquo;s answer is not the one you&rsquo;d expect.</p>
       <div class="persona-panel">
         <span>Persona</span>
         <div class="segmented">
@@ -680,7 +680,7 @@
       const fmtK = d => "$" + d3.format(".0f")(d/1000) + "K";
       const fmt$ = d => "$" + d3.format(",")(Math.round(d));
 
-      // ---- faithful reproduction of SCENE 4: exposure paradox — beeswarm "scissors" ----
+      // ---- beeswarm: US developer salary by threat perception (three flat clouds) ----
       const W=980, H=440, m={t:40,r:60,b:54,l:60};
       const svg = d3.select("#gi-svg");
       const groups = ["Feel threatened","Not threatened","Unsure"];   // x categories
@@ -689,17 +689,15 @@
       const x = d3.scalePoint().domain(groups).range([m.l+90, W-m.r-90]).padding(0.5);
       const y = d3.scaleLinear().domain([0,300000]).range([H-m.b, m.t]);   // salary
 
-      // left axis "$150K"
       svg.append("g").attr("class","axis")
          .attr("transform","translate("+m.l+",0)")
          .call(d3.axisLeft(y).ticks(6).tickFormat(fmtK));
-      // axis title
       svg.append("text").attr("transform","rotate(-90)")
          .attr("x",-H/2).attr("y",16).attr("text-anchor","middle")
          .attr("fill","#667085").attr("font-size",12)
          .text("Annual salary (USA, USD)");
 
-      // beeswarm x-offset within each group (dot-density jitter) — same collision walk as source swarm()
+      // beeswarm x-offset within each group (dot-density jitter)
       function swarm(vals){
         const r=3;
         const sorted=[...vals].sort((a,b)=>a-b);
@@ -725,7 +723,6 @@
         const sw=swarm(vals);
         const g=svg.append("g");
 
-        // individual-developer salary dots
         g.selectAll("circle").data(sw).join("circle")
           .attr("cx",d=>cx+d.ox).attr("cy",d=>d.cy).attr("r",2.6)
           .attr("fill",colorOf(grp)).attr("fill-opacity",0.5)
@@ -734,24 +731,19 @@
           .on("mousemove",(e,d)=>showTip(e,"<b>"+grp+"</b><br>salary "+fmt$(d.v)))
           .on("mouseleave",hideTip);
 
-        // median bar (shows the flatness across groups)
         g.append("line").attr("x1",cx-46).attr("x2",cx+46)
           .attr("y1",y(med)).attr("y2",y(med))
           .attr("stroke","#1f2c44").attr("stroke-width",2.5);
-        // median $ label above the bar
         g.append("text").attr("x",cx).attr("y",y(med)-8).attr("text-anchor","middle")
           .attr("fill","#1f2c44").attr("font-size",12).attr("font-weight",700)
           .text(fmt$(med));
-        // group label
         g.append("text").attr("x",cx).attr("y",H-m.b+18).attr("text-anchor","middle")
           .attr("fill","#667085").attr("font-size",12).text(grp);
-        // n devs
         g.append("text").attr("x",cx).attr("y",H-m.b+34).attr("text-anchor","middle")
           .attr("fill","var(--red)").attr("font-size",11)
           .text(threatByGroup[grp].n.toLocaleString()+" devs");
       });
 
-      // dashed line connecting the three medians -> visibly flat
       const mline=d3.line().x(d=>x(d.threat)).y(d=>y(d.median_comp));
       svg.append("path").datum(PAY).attr("fill","none")
         .attr("stroke","#1f2c44").attr("stroke-width",1.5)
@@ -761,12 +753,11 @@
         .attr("fill","#1f2c44").attr("font-size",11).attr("font-style","italic")
         .attr("opacity",0.8).text("medians ≈ flat");
 
-      // legend + caption
       d3.select("#gi-legend").html(
         '<span class="legend-item"><span class="swatch" style="background:var(--red)"></span>Feel threatened</span>' +
         '<span class="legend-item"><span class="swatch" style="background:#0f766e"></span>Not threatened</span>' +
         '<span class="legend-item"><span class="swatch" style="background:#94a3b8"></span>Unsure</span>' +
-        '<span class="legend-item" style="opacity:.8">Threat rises with AI use: 10% (no plan) &rarr; 21% (daily agents) — but the clouds stay level.</span>'
+        '<span class="legend-item" style="opacity:.8">Whatever the fear, the three salary clouds sit level (~$150K).</span>'
       );
     })();
     </script>
@@ -782,8 +773,6 @@
           <div class="viz-title" id="pay-title">AI pay gap by country · 2023 → 2025</div>
           <div class="controls" id="pay-controls">
             <button class="pill" id="pay-play">▶ Play</button>
-            <button class="pill active" data-view="gap">Pay gap</button>
-            <button class="pill" data-view="catch">Catch-up</button>
           </div>
         </div>
         <div class="viz-body">
@@ -829,30 +818,6 @@
         {country:"Japan",tier:"high",years:{"2023":{gap:14.3,pay:57346,n:156},"2024":{gap:21.3,pay:57598,n:94},"2025":{gap:17.3,pay:58725,n:116}}},
         {country:"Russian Federation",tier:"high",years:{"2023":{gap:-16.7,pay:27227,n:305},"2024":{gap:-9.1,pay:26891,n:209},"2025":{gap:-10.0,pay:38278,n:115}}}
       ];
-      // ---- inlined data: q2_country (2025 median pay vs AI-daily adoption) ----
-      const CATCH = [
-        {country:"United States of America",median_comp:150000,ai_daily_pct:39.8,n:6938},
-        {country:"Switzerland",median_comp:141972,ai_daily_pct:43.7,n:536},
-        {country:"Denmark",median_comp:98600,ai_daily_pct:47.5,n:303},
-        {country:"Australia",median_comp:97514,ai_daily_pct:41.3,n:775},
-        {country:"United Kingdom of Great Britain and Northern Ireland",median_comp:95299,ai_daily_pct:35.9,n:1968},
-        {country:"Canada",median_comp:87550,ai_daily_pct:40.1,n:1247},
-        {country:"Netherlands",median_comp:81210,ai_daily_pct:43.7,n:846},
-        {country:"Germany",median_comp:81210,ai_daily_pct:41.1,n:2932},
-        {country:"Austria",median_comp:78890,ai_daily_pct:37.6,n:402},
-        {country:"Sweden",median_comp:71017,ai_daily_pct:42.5,n:598},
-        {country:"Belgium",median_comp:70769,ai_daily_pct:37.7,n:310},
-        {country:"France",median_comp:63808,ai_daily_pct:36.7,n:1357},
-        {country:"Spain",median_comp:62648,ai_daily_pct:52.7,n:683},
-        {country:"Czech Republic",median_comp:60753,ai_daily_pct:50.8,n:500},
-        {country:"Poland",median_comp:60336,ai_daily_pct:49.3,n:846},
-        {country:"Romania",median_comp:57437,ai_daily_pct:47.2,n:307},
-        {country:"Italy",median_comp:48726,ai_daily_pct:47.1,n:802},
-        {country:"Ukraine",median_comp:31204,ai_daily_pct:61.0,n:915},
-        {country:"Brazil",median_comp:29126,ai_daily_pct:54.3,n:790},
-        {country:"India",median_comp:17436,ai_daily_pct:60.3,n:2274}
-      ];
-
       const HIGH = "#0e7490", LOW = "#c2570c", YEARS = ["2023","2024","2025"];
       const SHORT = {
         "United States of America":"USA",
@@ -971,13 +936,11 @@
         .attr("x", 0).attr("y", ih + 58)
         .attr("font-size",12).attr("fill","var(--ink)");
       annoG.append("tspan").attr("x",0).attr("dy",0).attr("font-weight",700)
-        .text("Most countries sit ABOVE the line — AI users earn more — and 2023→2025 the gap grew in most");
-      annoG.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",700)
-        .text("(USA +0→+14%, India −28→+54%). A few fell below (Ukraine). ")
-        .append("tspan").attr("font-weight",400).attr("fill","var(--muted)")
-        .text("Caveat: AI-daily users also tend");
-      annoG.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",400).attr("fill","var(--muted)")
-        .text("to be more experienced — a pattern, not proof of cause.");
+        .text("Most countries sit ABOVE the line — AI users earn more — and 2023→2025 the gap grew (USA +0→+14%, India −28→+54%).");
+      annoG.append("tspan").attr("x",0).attr("dy",16).attr("font-weight",700).attr("fill","var(--red)")
+        .text("The raw global “AI users earn less” is a mirage — low-pay, high-adoption countries (India, Ukraine) drag the pooled average down.");
+      annoG.append("tspan").attr("x",0).attr("dy",16).attr("font-weight",400).attr("fill","var(--muted)")
+        .text("Caveat: AI-daily users also skew more experienced — a pattern, not proof of cause.");
 
       let gapIdx = 0;
       function renderGap(idx, animate){
@@ -998,102 +961,10 @@
       }
 
       // ======================================================================
-      // VIEW B — Catch-up (static scatter, 2025) — hidden by default
-      // ======================================================================
-      const catchLayer = root.append("g").attr("class","pay-layer").style("display","none");
-
-      const cx = d3.scaleLog().domain([15000,160000]).range([0,iw]).clamp(true);
-      const cy = d3.scaleLinear().domain([30,65]).range([ih,0]);
-      const cr = d3.scaleSqrt().domain([0,d3.max(CATCH,d=>d.n)]).range([4,28]);
-
-      // y gridlines
-      catchLayer.append("g").attr("class","grid")
-        .selectAll("line").data(cy.ticks(6)).join("line")
-        .attr("x1",0).attr("x2",iw).attr("y1",d=>cy(d)).attr("y2",d=>cy(d));
-
-      const cxTicks=[15000,30000,60000,120000,160000];
-      catchLayer.append("g").attr("class","axis")
-        .attr("transform","translate(0,"+ih+")")
-        .call(d3.axisBottom(cx).tickValues(cxTicks).tickFormat(fmtK))
-        .call(g=>g.select(".domain").remove());
-      catchLayer.append("g").attr("class","axis")
-        .call(d3.axisLeft(cy).ticks(6).tickFormat(d=>d+"%"))
-        .call(g=>g.select(".domain").remove());
-
-      catchLayer.append("text")
-        .attr("x", iw/2).attr("y", ih + 42)
-        .attr("text-anchor","middle").attr("fill","var(--muted)")
-        .attr("font-size",12.5).attr("font-weight",600)
-        .text("National median developer pay (log)");
-      catchLayer.append("text")
-        .attr("transform","rotate(-90)")
-        .attr("x", -ih/2).attr("y", -46)
-        .attr("text-anchor","middle").attr("fill","var(--muted)")
-        .attr("font-size",12.5).attr("font-weight",600)
-        .text("AI-daily adoption (%)");
-
-      // least-squares trend line on (median_comp, ai_daily_pct) — drawn across the x-range
-      (function(){
-        const n=CATCH.length;
-        const sx=d3.sum(CATCH,d=>d.median_comp), sy=d3.sum(CATCH,d=>d.ai_daily_pct);
-        const sxy=d3.sum(CATCH,d=>d.median_comp*d.ai_daily_pct), sxx=d3.sum(CATCH,d=>d.median_comp*d.median_comp);
-        const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx), intc=(sy-slope*sx)/n;
-        const x0=15000, x1=160000;
-        catchLayer.append("line").attr("class","boundary-line")
-          .attr("x1",cx(x0)).attr("y1",cy(intc+slope*x0))
-          .attr("x2",cx(x1)).attr("y2",cy(intc+slope*x1))
-          .attr("stroke","#9aa6bb").attr("stroke-width",2).attr("stroke-dasharray","6 4").attr("opacity",0.85);
-        catchLayer.append("text")
-          .attr("x", cx(120000)).attr("y", cy(intc+slope*120000)-8)
-          .attr("text-anchor","end").attr("fill","#8b97ac")
-          .attr("font-size",11).attr("font-style","italic")
-          .text("more pay → less daily AI");
-      })();
-
-      // bubbles (single emphasis colour)
-      catchLayer.append("g").selectAll("circle.pay-cbub")
-        .data(CATCH).join("circle")
-        .attr("class","pay-cbub")
-        .attr("cx", d=>cx(d.median_comp))
-        .attr("cy", d=>cy(d.ai_daily_pct))
-        .attr("r",  d=>cr(d.n))
-        .attr("fill","var(--night)").attr("fill-opacity",0.55)
-        .attr("stroke","#fff").attr("stroke-width",1)
-        .style("cursor","pointer")
-        .on("mousemove",(e,d)=>showTip(e,"<b>"+shortName(d.country)+"</b><br>Pay "+fmtK(d.median_comp)+" · AI-daily "+d.ai_daily_pct+"% · N="+d.n.toLocaleString()))
-        .on("mouseleave", hideTip);
-
-      // labels for selected catch-up countries
-      const cLabelSet = new Set(["United States of America","India","Ukraine","Switzerland","Spain"]);
-      catchLayer.append("g").selectAll("text.pay-clab2")
-        .data(CATCH.filter(d=>cLabelSet.has(d.country))).join("text")
-        .attr("class","pay-clab2 label")
-        .attr("x", d=>cx(d.median_comp))
-        .attr("y", d=>cy(d.ai_daily_pct)-cr(d.n)-5)
-        .attr("text-anchor","middle")
-        .attr("font-size",11).attr("font-weight",600)
-        .attr("fill","var(--ink)")
-        .attr("paint-order","stroke").attr("stroke","#fff").attr("stroke-width",2.6)
-        .style("pointer-events","none")
-        .text(d=>shortName(d.country));
-
-      // catch-up annotation (under chart)
-      const cAnno = catchLayer.append("text")
-        .attr("x",0).attr("y", ih + 58)
-        .attr("font-size",12).attr("fill","var(--ink)");
-      cAnno.append("tspan").attr("x",0).attr("dy",0).attr("font-weight",700)
-        .text("The poorer the market, the harder developers adopt AI (India $17k→60%, USA $150k→40%).");
-      cAnno.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",700)
-        .text("Pool everyone together and the low-pay, high-adoption countries drag the average down —");
-      cAnno.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",700)
-        .text("that's the ")
-        .append("tspan").attr("fill","var(--red)").text("−62% mirage.");
-
-      // ======================================================================
       // Controls: year chips (injected into #pay-controls), play, view pills
       // ======================================================================
       // build year chips into the controls bar, between play and the view pills
-      const yrWrap = d3.select("#pay-controls").insert("span",'[data-view="gap"]')
+      const yrWrap = d3.select("#pay-controls").append("span")
         .attr("id","pay-years").attr("class","legend").style("gap","6px");
       yrWrap.selectAll("button").data(YEARS).join("button")
         .attr("class","pill pay-yr")
@@ -1111,50 +982,20 @@
       }
       d3.select("#pay-play").on("click",()=>playing?stop():play());
 
-      // legend content (depends on active view)
+      // legend content
       const legend = d3.select("#pay-legend");
-      function setLegend(view){
-        if(view==="gap"){
-          legend.html(
-            '<span class="legend-item"><span class="swatch" style="background:'+HIGH+'"></span>Higher-income country</span>'+
-            '<span class="legend-item"><span class="swatch" style="background:'+LOW+'"></span>Lower-income country</span>'+
-            '<span class="legend-item" style="color:var(--muted)">above the line = AI users earn more · size = #devs</span>'+
-            '<span class="legend-item" style="color:var(--muted)">"AI user" = uses AI tools (any frequency)</span>'
-          );
-        } else {
-          legend.html(
-            '<span class="legend-item"><span class="swatch" style="background:var(--night)"></span>Country (2025)</span>'+
-            '<span class="legend-item" style="color:var(--muted)">size = #devs · dashed line = inverse trend</span>'+
-            '<span class="legend-item" style="color:var(--muted)">"AI-daily" = uses AI daily (a different SO question)</span>'
-          );
-        }
+      function setLegend(){
+        legend.html(
+          '<span class="legend-item"><span class="swatch" style="background:'+HIGH+'"></span>Higher-income country</span>'+
+          '<span class="legend-item"><span class="swatch" style="background:'+LOW+'"></span>Lower-income country</span>'+
+          '<span class="legend-item" style="color:var(--muted)">above the line = AI users earn more · size = #devs</span>'+
+          '<span class="legend-item" style="color:var(--muted)">"AI user" = uses AI tools (any frequency)</span>'
+        );
       }
 
-      // view switching via the two data-view pills
-      function setView(view){
-        const isGap = view==="gap";
-        d3.selectAll('#pay-controls .pill[data-view]').classed("active", function(){
-          return this.getAttribute("data-view")===view;
-        });
-        // play + year chips only make sense for the animated gap view
-        d3.select("#pay-play").style("display", isGap?null:"none");
-        yrWrap.style("display", isGap?null:"none");
-        if(!isGap) stop();
-        d3.select("#pay-title").text(isGap
-          ? "AI pay gap by country · 2023 → 2025"
-          : "Adoption vs. pay · why the average lies · 2025");
-        gapLayer.style("display", isGap?null:"none");
-        catchLayer.style("display", isGap?"none":null);
-        if(isGap){ renderGap(gapIdx, false); }
-        setLegend(view);
-      }
-      d3.selectAll('#pay-controls .pill[data-view]').on("click", function(){
-        setView(this.getAttribute("data-view"));
-      });
-
-      // initial render: gap view, year 2023, no animation
+      // initial render: year 2023, no animation
       renderGap(0, false);
-      setLegend("gap");
+      setLegend();
     })();
     </script>
 
@@ -1229,65 +1070,63 @@
       const W = 980, H = 480;
       const svg = d3.select("#vf-svg");
 
-      /* ============ VIEW A — Skill atrophy = SCENE 6 mirror / diverging area ============ */
+      /* ============ VIEW A — Skill atrophy: the hidden cost juniors pay (clean bars) ============ */
       const gA = svg.append("g").attr("id","vf-atrophy");
       (function(){
-        const m = {t:30, r:120, b:30, l:60};
+        const m = {t:46, r:236, b:56, l:66};
         const buckets = ATRO.map(d=>d.bucket);
-        const premByBucket = {}; PREM.forEach(d=>premByBucket[d.bucket]=d.premium);
-        const data = ATRO.map(d=>({bucket:d.bucket, atrophy:d.atrophy, prem:premByBucket[d.bucket]??null}));
-        const x = d3.scalePoint().domain(buckets).range([m.l, W-m.r]).padding(0.4);
-        const mid = (m.t + (H-m.b)) / 2;
-        const yUp = d3.scaleLinear().domain([0,40]).range([mid-8, m.t]);     // atrophy upward
-        const yDn = d3.scaleLinear().domain([0,30]).range([mid+8, H-m.b]);   // premium downward
+        const x = d3.scaleBand().domain(buckets).range([m.l, W-m.r]).padding(0.3);
+        const y = d3.scaleLinear().domain([0,40]).range([H-m.b, m.t]);
 
-        // center axis
-        gA.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",mid).attr("y2",mid).attr("stroke",CENTER);
+        // y axis + title
+        gA.append("g").attr("class","axis").attr("transform","translate("+m.l+",0)")
+          .call(d3.axisLeft(y).ticks(5).tickFormat(d=>d+"%"));
+        gA.append("text").attr("transform","rotate(-90)").attr("x",-(m.t+(H-m.b))/2).attr("y",16)
+          .attr("text-anchor","middle").attr("fill",SUB).attr("font-size",11)
+          .text("feel AI eroding their own problem-solving");
+
+        // x labels + axis caption
         gA.selectAll(".vf-xt").data(buckets).join("text").attr("class","vf-xt")
-          .attr("x",d=>x(d)).attr("y",mid+4).attr("dy","0.7em")
-          .attr("text-anchor","middle").attr("fill",SUB).attr("font-size",11).text(d=>d);
-        gA.append("text").attr("x",W/2).attr("y",mid-2).attr("text-anchor","middle")
-          .attr("fill",SUB).attr("font-size",10).text("← junior      experience      senior →");
+          .attr("x",d=>x(d)+x.bandwidth()/2).attr("y",H-m.b+18).attr("text-anchor","middle")
+          .attr("fill",SUB).attr("font-size",11).text(d=>d);
+        gA.append("text").attr("x",(m.l+(W-m.r))/2).attr("y",H-m.b+40).attr("text-anchor","middle")
+          .attr("fill",SUB).attr("font-size",10).text("← junior        years of experience        senior →");
 
-        const areaUp = d3.area().x(d=>x(d.bucket)).y0(mid).y1(d=>yUp(d.atrophy)).curve(d3.curveMonotoneX);
-        const areaDn = d3.area().defined(d=>d.prem!=null).x(d=>x(d.bucket)).y0(mid).y1(d=>yDn(d.prem)).curve(d3.curveMonotoneX);
-
-        // top: skill-atrophy fear (shrinks with experience) — red area, growing UPWARD
-        const up = gA.append("path").datum(data).attr("fill",RED).attr("opacity",0).attr("d",areaUp);
-        up.transition().duration(800).attr("opacity",0.32);
-        // bottom: AI salary premium (positive at every level) — green area, growing DOWNWARD
-        const dn = gA.append("path").datum(data).attr("fill",GREEN).attr("opacity",0).attr("d",areaDn);
-        dn.transition().duration(800).delay(300).attr("opacity",0.30);
-
-        data.forEach((d,i)=>{
-          gA.append("circle").attr("cx",x(d.bucket)).attr("cy",yUp(d.atrophy)).attr("r",0)
-            .attr("fill",INK).attr("stroke",DOTSTROKE).attr("stroke-width",1).style("cursor","pointer")
-            .on("mousemove",(e)=>showTip(e,"<b>"+d.bucket+" yr</b><br>feel skills eroding: "+d.atrophy+"%")).on("mouseleave",hideTip)
-            .transition().delay(i*70).attr("r",3.5);
-          if(d.prem!=null) gA.append("circle").attr("cx",x(d.bucket)).attr("cy",yDn(d.prem)).attr("r",0)
-            .attr("fill",INK).attr("stroke",DOTSTROKE).attr("stroke-width",1).style("cursor","pointer")
-            .on("mousemove",(e)=>showTip(e,"<b>"+d.bucket+" yr (USA)</b><br>AI salary premium: +"+d.prem+"%")).on("mouseleave",hideTip)
-            .transition().delay(300+i*70).attr("r",3.5);
+        // bars: red fades as experience grows (cost concentrates on juniors)
+        ATRO.forEach((d,i)=>{
+          const t = i/(ATRO.length-1);
+          gA.append("rect").attr("x",x(d.bucket)).attr("width",x.bandwidth())
+            .attr("y",y(0)).attr("height",0).attr("rx",3)
+            .attr("fill",RED).attr("opacity",0.9-t*0.55).style("cursor","pointer")
+            .on("mousemove",(e)=>showTip(e,"<b>"+d.bucket+" yr</b><br>feel skills eroding: "+d.atrophy+"%<br>debugging AI code slower: "+d.debug+"%<br>n="+d3.format(",")(d.n))).on("mouseleave",hideTip)
+            .transition().duration(700).delay(i*70).attr("y",y(d.atrophy)).attr("height",y(0)-y(d.atrophy));
+          gA.append("text").attr("x",x(d.bucket)+x.bandwidth()/2).attr("y",y(d.atrophy)-8)
+            .attr("text-anchor","middle").attr("fill",RED).attr("font-size",12).attr("font-weight",700)
+            .attr("opacity",0).text(d.atrophy+"%").transition().delay(420+i*70).attr("opacity",1);
         });
 
-        // end value labels (atrophy, first & last bucket)
-        const a0 = data[0], aN = data[data.length-1];
-        gA.append("text").attr("x",x(a0.bucket)).attr("y",yUp(a0.atrophy)-8).attr("text-anchor","middle")
-          .attr("fill",RED).attr("font-size",12).attr("font-weight",700).attr("opacity",0).text(a0.atrophy+"%")
-          .transition().delay(700).attr("opacity",1);
-        gA.append("text").attr("x",x(aN.bucket)).attr("y",yUp(aN.atrophy)-8).attr("text-anchor","middle")
-          .attr("fill",RED).attr("font-size",12).attr("font-weight",700).attr("opacity",0).text(aN.atrophy+"%")
-          .transition().delay(700).attr("opacity",1);
+        // 4x bracket annotation (junior vs senior)
+        gA.append("text").attr("x",(x(buckets[0])+x(buckets[buckets.length-1]))/2+x.bandwidth()/2)
+          .attr("y",m.t-10).attr("text-anchor","middle").attr("fill",INK).attr("font-size",12).attr("font-weight",700)
+          .attr("opacity",0).text("juniors ~4× more than seniors (35% vs 8%)")
+          .transition().delay(900).attr("opacity",0.85);
 
-        // right-side labels
-        gA.append("text").attr("x",W-m.r+8).attr("y",yUp(15)).attr("fill",RED).attr("font-size",11.5)
-          .attr("font-weight",600).attr("opacity",0).text("fear: skills").transition().delay(800).attr("opacity",1);
-        gA.append("text").attr("x",W-m.r+8).attr("y",yUp(15)+15).attr("fill",RED).attr("font-size",11.5)
-          .attr("opacity",0).text("eroding").transition().delay(800).attr("opacity",0.9);
-        gA.append("text").attr("x",W-m.r+8).attr("y",yDn(15)).attr("fill",GREEN).attr("font-size",11.5)
-          .attr("font-weight",600).attr("opacity",0).text("AI salary").transition().delay(1000).attr("opacity",1);
-        gA.append("text").attr("x",W-m.r+8).attr("y",yDn(15)+15).attr("fill",GREEN).attr("font-size",11.5)
-          .attr("opacity",0).text("premium (USA)").transition().delay(1000).attr("opacity",0.9);
+        // right-side explainer panel
+        const ax = W-m.r+18; let ay=m.t+4;
+        const note=(txt,opt={})=>{ gA.append("text").attr("x",ax).attr("y",ay).attr("fill",opt.col||INK)
+          .attr("font-size",opt.bold?12.5:11).attr("font-weight",opt.bold?700:400).text(txt); ay+=opt.bold?20:15.5; };
+        note("Why only juniors?",{bold:true,col:RED});
+        note("AI is “almost right” for");
+        note("everyone (~65%, flat).");
+        ay+=7;
+        note("But juniors offload the one",{bold:true});
+        note("skill-building task most:");
+        note("debugging — 28% “mostly AI”");
+        note("vs 18% for seniors.");
+        ay+=7;
+        note("Less practice catching errors",{col:SUB});
+        note("→ the verification muscle",{col:SUB});
+        note("never grows.",{col:SUB});
       })();
 
       /* ============ VIEW B — Trust boundary = SCENE 5 1-D delegation spectrum ============ */
@@ -1343,8 +1182,8 @@
 
       /* ============ Legends ============ */
       const legendAtro =
-        '<span class="legend-item"><span class="swatch" style="background:'+RED+'"></span>▲ % who feel AI is eroding their own skills</span>' +
-        '<span class="legend-item"><span class="swatch" style="background:'+GREEN+'"></span>▼ AI-daily salary premium (USA)</span>';
+        '<span class="legend-item"><span class="swatch" style="background:'+RED+'"></span>% who feel AI is eroding their own problem-solving, by experience</span>' +
+        '<span class="legend-item" style="color:'+SUB+'">(the AI pay premium is in Act 2 — here we isolate the hidden cost)</span>';
       const legendTrust =
         '<span class="legend-item"><span class="swatch" style="background:'+GREEN+'"></span>exploration (search, write, learn, debug)</span>' +
         '<span class="legend-item"><span class="swatch" style="background:'+RED+'"></span>production / judgment (commit, plan, deploy)</span>' +
@@ -1354,7 +1193,7 @@
         const isAtro = view === "atrophy";
         gA.style("display", isAtro ? null : "none");
         gB.style("display", isAtro ? "none" : null);
-        d3.select("#vf-title").text(isAtro ? "Skill atrophy vs AI pay premium · by experience" : "The trust boundary · delegation spectrum by task");
+        d3.select("#vf-title").text(isAtro ? "Skill atrophy · the hidden cost juniors pay" : "The trust boundary · delegation spectrum by task");
         d3.select("#vf-legend").html(isAtro ? legendAtro : legendTrust);
         d3.selectAll("#vf-controls .pill").classed("active", function(){
           return this.getAttribute("data-view") === view;
@@ -1374,12 +1213,12 @@
     <section class="scene" id="clusters">
       <aside class="prompt">
         <div class="scene-num">Act 4 · What survives</div>
-        <h2>Text responses become skill clusters.</h2>
-        <div class="micro" id="cluster-insight">AIOpen responses are clustered with seeded categories plus TF-IDF/KMeans. The result shows which human skills developers repeatedly name when asked what survives stronger AI.</div>
+        <h2>Ask 21,824 developers what AI can&rsquo;t take — they name the same human skills.</h2>
+        <div class="micro" id="cluster-insight">When asked what stays valuable as AI gets stronger, developers overwhelmingly name problem-solving and debugging — and &ldquo;verifying AI&rsquo;s output&rdquo; is itself one of the most-named skills, the exact muscle Act 3 says juniors are losing. The takeaway for you: these are the skills to deliberately practice, not delegate.</div>
       </aside>
       <div class="viz-card">
         <div class="viz-head">
-          <div class="viz-title">AIOpen text clusters · 21,824 responses</div>
+          <div class="viz-title">What survives AI · skills named across 21,824 responses</div>
           <div class="controls" id="cluster-controls">
             <button class="pill active" data-cluster-filter="all">All</button>
             <button class="pill" data-cluster-filter="junior">Junior lens</button>
