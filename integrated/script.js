@@ -14,7 +14,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   const fmtK = d => "$" + d3.format(".0f")(d/1000) + "K";
   const fmt$ = d => "$" + d3.format(",")(Math.round(d));
 
-  const W=980, H=440, m={t:40,r:60,b:54,l:64};
+  const W=980, H=520, m={t:92,r:60,b:58,l:64};
   const svg = d3.select("#gi-svg");
   const groups = ["Feel threatened","Not threatened","Unsure"];   // x categories
   const threatByGroup = {}; PAY.forEach(p=>threatByGroup[p.threat]=p);
@@ -27,8 +27,8 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   };
 
   const x   = d3.scalePoint().domain(groups).range([m.l+90, W-m.r-90]).padding(0.5);
-  const ySal= d3.scaleLinear().domain([0,300000]).range([H-m.b, m.t]);   // salary
-  const yAI = d3.scaleLinear().domain([-0.4,4.4]).range([H-m.b, m.t]);   // AI cadence 0..4
+  const ySal= d3.scaleLinear().domain([0,300000]).range([H-m.b, m.t]).clamp(true);   // salary
+  const yAI = d3.scaleLinear().domain([-0.4,4.4]).range([H-m.b, m.t]).clamp(true);   // AI cadence 0..4
 
   // tiny seeded PRNG so the modeled AI values are stable across reloads
   function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
@@ -101,16 +101,19 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     svg.append("text").attr("x",cx).attr("y",H-m.b+34).attr("text-anchor","middle").attr("fill","var(--red)").attr("font-size",11).text(threatByGroup[grp].n.toLocaleString()+" devs");
   });
 
-  // dashed connector across the three salary medians (-> visibly flat in salary mode)
-  const connector = svg.append("path").datum(PAY).attr("fill","none")
+  // dashed connector: starts at the LEFT Y-AXIS ($150K tick) then runs across the three
+  // salary medians -> ties "medians ≈ $150K" straight to the axis (visibly flat in salary mode)
+  const medLinePts = [{xx:m.l, yy:ySal(150000)}].concat(
+    groups.map(g=>({xx:x(g), yy:ySal(threatByGroup[g].median_comp)})));
+  const connector = svg.append("path").attr("fill","none")
     .attr("stroke","#1f2c44").attr("stroke-width",1.5).attr("stroke-dasharray","5 4").attr("opacity",0)
-    .attr("d", d3.line().x(d=>x(d.threat)).y(d=>ySal(d.median_comp)));
+    .attr("d", d3.line().x(d=>d.xx).y(d=>d.yy)(medLinePts));
   const flatNote = svg.append("text").attr("x",W-m.r-80).attr("y",ySal(150000)-14)
-    .attr("fill","#1f2c44").attr("font-size",11).attr("font-style","italic").attr("opacity",0).text("medians ≈ flat");
+    .attr("fill","#1f2c44").attr("font-size",16).attr("font-weight",700).attr("font-style","italic").attr("opacity",0).text("medians ≈ flat");
 
   // dynamic caption at top of plot
-  const modeNote = svg.append("text").attr("x",m.l+90).attr("y",m.t-16)
-    .attr("fill","#667085").attr("font-size",12).attr("font-weight",600);
+  const modeNote = svg.append("text").attr("x",W/2).attr("y",m.t-26).attr("text-anchor","middle")
+    .attr("fill","#1f2c44").attr("font-size",19).attr("font-weight",700);
 
   function setMode(mode, animate){
     const sal = mode==="salary";
@@ -123,11 +126,11 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     groups.forEach(grp=>{
       const yPos = sal ? ySal(threatByGroup[grp].median_comp) : yAI(AI.meanByGroup[grp]);
       med[grp].bar.transition(t).attr("y1",yPos).attr("y2",yPos);
-      med[grp].lab.transition(t).attr("y",yPos-8).text(sal?fmt$(threatByGroup[grp].median_comp):AI.levels[Math.round(AI.meanByGroup[grp])]);
+      med[grp].lab.transition(t).attr("y",yPos-8).text(sal?"":AI.levels[Math.round(AI.meanByGroup[grp])]);
     });
     connector.transition(t).attr("opacity",sal?0.6:0);
     flatNote.transition(t).attr("opacity",sal?0.85:0);
-    modeNote.text(sal
+    modeNote.attr("font-size", sal ? 19 : 14).text(sal
       ? "Same pay, whatever the fear — the three medians sit level."
       : "Threatened developers skew toward heavier AI use ("+AI.threatRateLow+"% → "+AI.threatRateHigh+"% feel threatened, non-users → daily users).");
   }
@@ -261,18 +264,16 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .style("pointer-events","none")
     .text(d=>shortName(d.country));
 
-  // annotation block under the gap chart (in-SVG, multi-line)
+  // annotation block under the gap chart (centered, pushed below the x-axis label)
   const annoG = gapLayer.append("text")
-    .attr("x", 0).attr("y", ih + 58)
+    .attr("x", iw/2).attr("y", ih + 72).attr("text-anchor","middle")
     .attr("font-size",12).attr("fill","var(--ink)");
-  annoG.append("tspan").attr("x",0).attr("dy",0).attr("font-weight",700)
+  annoG.append("tspan").attr("x",iw/2).attr("dy",0).attr("font-weight",700)
     .text("Most countries sit ABOVE the line — AI users earn more — and 2023→2025 the gap grew in most");
-  annoG.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",700)
-    .text("(USA +0→+14%, India −28→+54%). A few fell below (Ukraine). ")
-    .append("tspan").attr("font-weight",400).attr("fill","var(--muted)")
-    .text("Caveat: AI-daily users also tend");
-  annoG.append("tspan").attr("x",0).attr("dy",15).attr("font-weight",400).attr("fill","var(--muted)")
-    .text("to be more experienced — a pattern, not proof of cause.");
+  annoG.append("tspan").attr("x",iw/2).attr("dy",16).attr("font-weight",700)
+    .text("(USA +0→+14%, India −28→+54%). A few fell below (Ukraine).");
+  annoG.append("tspan").attr("x",iw/2).attr("dy",16).attr("font-weight",400).attr("fill","var(--muted)")
+    .text("Caveat: AI-daily users also tend to be more experienced — a pattern, not proof of cause.");
 
   let gapIdx = 0;
   function renderGap(idx, animate){
@@ -331,163 +332,342 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
 })();
 
 // Source script block 3.
-(function(){
-  /* ---------- inlined data ---------- */
-  /* re-theme: dark -> light */
-  const RED = "#c24136";    // atrophy (was #f87171)
-  const GREEN = "#0f766e";  // premium / delegated (was #4ade80)
-  const INK = "#1f2c44";    // primary text + dot markers (was #fff/#e0e0e0)
-  const SUB = "#667085";    // secondary text (was #888/#666/#ccc)
-  const CENTER = "#cad2df"; // center axis (was #555)
-  const CONN = "#cad2df";   // connector lines (was #333)
-  const DOTSTROKE = "#ffffff"; // dot stroke (was #0a0a0f)
+(function () {
+  // ---- data (real Stack Overflow 2025; falls back to inlined copy if global absent) ----
+  var FALLBACK = [
+    { task: "Search for answers", now: 58.6, mostly: 20.0, planned: 25.1, refused: 16.3, n: 30378 },
+    { task: "Writing code", now: 46.9, mostly: 6.2, planned: 29.1, refused: 24.0, n: 30530 },
+    { task: "Learning new concepts or technologies", now: 45.3, mostly: 12.3, planned: 27.6, refused: 27.1, n: 30182 },
+    { task: "Debugging or fixing code", now: 40.3, mostly: 7.6, planned: 29.3, refused: 30.4, n: 30311 },
+    { task: "Generating content or synthetic data", now: 33.8, mostly: 13.5, planned: 33.7, refused: 32.5, n: 29753 },
+    { task: "Documenting code", now: 32.6, mostly: 11.5, planned: 35.0, refused: 32.4, n: 30122 },
+    { task: "Learning about a codebase", now: 30.7, mostly: 7.8, planned: 36.1, refused: 33.3, n: 30045 },
+    { task: "Creating or maintaining documentation", now: 28.4, mostly: 9.3, planned: 38.0, refused: 33.5, n: 29975 },
+    { task: "Testing code", now: 25.9, mostly: 6.7, planned: 37.0, refused: 37.2, n: 30123 },
+    { task: "Committing and reviewing code", now: 19.7, mostly: 3.8, planned: 30.6, refused: 49.7, n: 29948 },
+    { task: "Project planning", now: 16.1, mostly: 4.1, planned: 24.9, refused: 58.9, n: 29812 },
+    { task: "Predictive analytics", now: 13.4, mostly: 4.2, planned: 29.5, refused: 57.1, n: 29134 },
+    { task: "Deployment and monitoring", now: 9.7, mostly: 2.3, planned: 25.5, refused: 64.8, n: 29712 }
+  ];
+  var TASKS = ((window.INDEX_SCROLL_VERIFY_DATA || {}).TASKS) || FALLBACK;
 
-  const tip = d3.select("#tooltip");
-  const showTip = (e,h)=>tip.html(h).style("left",e.clientX+"px").style("top",e.clientY+"px").classed("visible",true);
-  const hideTip = ()=>tip.classed("visible",false);
+  // ---- short labels for on-chart text ----
+  var SHORT = {
+    "Search for answers": "Search answers",
+    "Writing code": "Writing code",
+    "Learning new concepts or technologies": "Learning new tech",
+    "Debugging or fixing code": "Debugging",
+    "Generating content or synthetic data": "Generating content",
+    "Documenting code": "Documenting code",
+    "Learning about a codebase": "Learn a codebase",
+    "Creating or maintaining documentation": "Maintaining docs",
+    "Testing code": "Testing code",
+    "Committing and reviewing code": "Commit & review",
+    "Project planning": "Project planning",
+    "Predictive analytics": "Predictive analytics",
+    "Deployment and monitoring": "Deploy & monitor"
+  };
+  function short(t) { return SHORT[t] || t; }
 
-  const W = 980, H = 480;
-  const svg = d3.select("#vf-svg");
+  // ---- work-category map (task -> {cat,color}); colorblind-safe palette ----
+  var CATS = [
+    { cat: "Coding", color: "#0072B2" },
+    { cat: "Quality", color: "#009E73" },
+    { cat: "Docs", color: "#56B4E9" },
+    { cat: "Learning", color: "#E69F00" },
+    { cat: "Planning", color: "#CC79A7" },
+    { cat: "Ops", color: "#D55E00" }
+  ];
+  var CAT_COLOR = {};
+  CATS.forEach(function (c) { CAT_COLOR[c.cat] = c.color; });
+  var TASK_CAT = {
+    "Writing code": "Coding",
+    "Debugging or fixing code": "Coding",
+    "Generating content or synthetic data": "Coding",
+    "Testing code": "Quality",
+    "Committing and reviewing code": "Quality",
+    "Documenting code": "Docs",
+    "Creating or maintaining documentation": "Docs",
+    "Search for answers": "Learning",
+    "Learning new concepts or technologies": "Learning",
+    "Learning about a codebase": "Learning",
+    "Project planning": "Planning",
+    "Predictive analytics": "Planning",
+    "Deployment and monitoring": "Ops"
+  };
+  var CAT = {};
+  Object.keys(TASK_CAT).forEach(function (t) {
+    var c = TASK_CAT[t];
+    CAT[t] = { cat: c, color: CAT_COLOR[c] };
+  });
+  function catColor(t) { return (CAT[t] && CAT[t].color) || "var(--cyan)"; }
 
-  /* ============ VIEW A — Skill atrophy = SCENE 6 mirror / diverging area ============ */
-  const gA = svg.append("g").attr("id","vf-atrophy");
-  (function(){
-    const m = {t:30, r:120, b:30, l:60};
-    const buckets = ATRO.map(d=>d.bucket);
-    const premByBucket = {}; PREM.forEach(d=>premByBucket[d.bucket]=d.premium);
-    const data = ATRO.map(d=>({bucket:d.bucket, atrophy:d.atrophy, prem:premByBucket[d.bucket]??null}));
-    const x = d3.scalePoint().domain(buckets).range([m.l, W-m.r]).padding(0.4);
-    const mid = (m.t + (H-m.b)) / 2;
-    const yUp = d3.scaleLinear().domain([0,40]).range([mid-8, m.t]);     // atrophy upward
-    const yDn = d3.scaleLinear().domain([0,30]).range([mid+8, H-m.b]);   // premium downward
+  // ---- metrics (short labels for the compact axis <select>s) ----
+  var METRICS = {
+    now: "AI use now",
+    mostly: "Mostly delegate",
+    planned: "Plan to use",
+    refused: "Keep human"
+  };
+  var DETAIL_LABEL = {
+    now: "Use AI now",
+    mostly: "Mostly delegate",
+    planned: "Plan to use",
+    refused: "Keep human"
+  };
+  var KEYS = ["now", "mostly", "planned", "refused"];
 
-    // center axis
-    gA.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",mid).attr("y2",mid).attr("stroke",CENTER);
-    gA.selectAll(".vf-xt").data(buckets).join("text").attr("class","vf-xt")
-      .attr("x",d=>x(d)).attr("y",mid+4).attr("dy","0.7em")
-      .attr("text-anchor","middle").attr("fill",SUB).attr("font-size",11).text(d=>d);
-    gA.append("text").attr("x",W/2).attr("y",mid-2).attr("text-anchor","middle")
-      .attr("fill",SUB).attr("font-size",10).text("← junior      experience      senior →");
+  var xKey = "now", yKey = "mostly", selected = null;
 
-    const areaUp = d3.area().x(d=>x(d.bucket)).y0(mid).y1(d=>yUp(d.atrophy)).curve(d3.curveMonotoneX);
-    const areaDn = d3.area().defined(d=>d.prem!=null).x(d=>x(d.bucket)).y0(mid).y1(d=>yDn(d.prem)).curve(d3.curveMonotoneX);
+  // ---- selects ----
+  var xSel = document.getElementById("vf-xsel");
+  var ySel = document.getElementById("vf-ysel");
+  function optionsHtml() {
+    return KEYS.map(function (k) {
+      return '<option value="' + k + '">' + METRICS[k] + '</option>';
+    }).join("");
+  }
+  xSel.innerHTML = optionsHtml();
+  ySel.innerHTML = optionsHtml();
+  xSel.value = xKey;
+  ySel.value = yKey;
+  xSel.addEventListener("change", function () { xKey = this.value; render(true); });
+  ySel.addEventListener("change", function () { yKey = this.value; render(true); });
 
-    // top: skill-atrophy fear (shrinks with experience) — red area, growing UPWARD
-    const up = gA.append("path").datum(data).attr("fill",RED).attr("opacity",0).attr("d",areaUp);
-    up.transition().duration(800).attr("opacity",0.32);
-    // bottom: AI salary premium (positive at every level) — green area, growing DOWNWARD
-    const dn = gA.append("path").datum(data).attr("fill",GREEN).attr("opacity",0).attr("d",areaDn);
-    dn.transition().duration(800).delay(300).attr("opacity",0.30);
+  // ---- svg scaffold ----
+  var W = 640, H = 470, M = { top: 22, right: 24, bottom: 50, left: 56 };
+  var iW = W - M.left - M.right, iH = H - M.top - M.bottom;
+  var svg = d3.select("#vf-svg");
+  var g = svg.append("g").attr("transform", "translate(" + M.left + "," + M.top + ")");
+  var gGrid = g.append("g").attr("class", "grid");
+  var gMed = g.append("g");
+  var gCorner = g.append("g");
+  var gDots = g.append("g");
+  var gLead = g.append("g");
+  var gLab = g.append("g");
+  var gx = g.append("g").attr("class", "axis").attr("transform", "translate(0," + iH + ")");
+  var gy = g.append("g").attr("class", "axis");
+  var xTitle = g.append("text")
+    .attr("text-anchor", "middle").attr("x", iW / 2).attr("y", iH + 40)
+    .attr("fill", "#334155").style("font-size", "12px").style("font-weight", "900");
+  var yTitle = g.append("text")
+    .attr("text-anchor", "middle").attr("transform", "rotate(-90)").attr("x", -iH / 2).attr("y", -42)
+    .attr("fill", "#334155").style("font-size", "12px").style("font-weight", "900");
 
-    data.forEach((d,i)=>{
-      gA.append("circle").attr("cx",x(d.bucket)).attr("cy",yUp(d.atrophy)).attr("r",0)
-        .attr("fill",INK).attr("stroke",DOTSTROKE).attr("stroke-width",1).style("cursor","pointer")
-        .on("mousemove",(e)=>showTip(e,"<b>"+d.bucket+" yr</b><br>feel skills eroding: "+d.atrophy+"%")).on("mouseleave",hideTip)
-        .transition().delay(i*70).attr("r",3.5);
-      if(d.prem!=null) gA.append("circle").attr("cx",x(d.bucket)).attr("cy",yDn(d.prem)).attr("r",0)
-        .attr("fill",INK).attr("stroke",DOTSTROKE).attr("stroke-width",1).style("cursor","pointer")
-        .on("mousemove",(e)=>showTip(e,"<b>"+d.bucket+" yr (USA)</b><br>AI salary premium: +"+d.prem+"%")).on("mouseleave",hideTip)
-        .transition().delay(300+i*70).attr("r",3.5);
-    });
+  var tip = d3.select("#tooltip");
 
-    // end value labels (atrophy, first & last bucket)
-    const a0 = data[0], aN = data[data.length-1];
-    gA.append("text").attr("x",x(a0.bucket)).attr("y",yUp(a0.atrophy)-8).attr("text-anchor","middle")
-      .attr("fill",RED).attr("font-size",12).attr("font-weight",700).attr("opacity",0).text(a0.atrophy+"%")
-      .transition().delay(700).attr("opacity",1);
-    gA.append("text").attr("x",x(aN.bucket)).attr("y",yUp(aN.atrophy)-8).attr("text-anchor","middle")
-      .attr("fill",RED).attr("font-size",12).attr("font-weight",700).attr("opacity",0).text(aN.atrophy+"%")
-      .transition().delay(700).attr("opacity",1);
-
-    // right-side labels
-    gA.append("text").attr("x",W-m.r+8).attr("y",yUp(15)).attr("fill",RED).attr("font-size",11.5)
-      .attr("font-weight",600).attr("opacity",0).text("fear: skills").transition().delay(800).attr("opacity",1);
-    gA.append("text").attr("x",W-m.r+8).attr("y",yUp(15)+15).attr("fill",RED).attr("font-size",11.5)
-      .attr("opacity",0).text("eroding").transition().delay(800).attr("opacity",0.9);
-    gA.append("text").attr("x",W-m.r+8).attr("y",yDn(15)).attr("fill",GREEN).attr("font-size",11.5)
-      .attr("font-weight",600).attr("opacity",0).text("AI salary").transition().delay(1000).attr("opacity",1);
-    gA.append("text").attr("x",W-m.r+8).attr("y",yDn(15)+15).attr("fill",GREEN).attr("font-size",11.5)
-      .attr("opacity",0).text("premium (USA)").transition().delay(1000).attr("opacity",0.9);
-  })();
-
-  /* ============ VIEW B — Trust boundary = SCENE 5 1-D delegation spectrum ============ */
-  const gB = svg.append("g").attr("id","vf-trust").style("display","none");
-  (function(){
-    const m = {t:50, r:40, b:70, l:40};
-    const x = d3.scaleLinear().domain([0,62]).range([m.l+40, W-m.r-40]);   // "% doing this with AI now"
-    const axisY = H - m.b;
-
-    // gradient strip background: left = human-only, right = AI-heavy
-    const defs = gB.append("defs");
-    const grad = defs.append("linearGradient").attr("id","vf-delg").attr("x1","0").attr("x2","1");
-    grad.append("stop").attr("offset","0").attr("stop-color",RED).attr("stop-opacity",.16);
-    grad.append("stop").attr("offset","1").attr("stop-color",GREEN).attr("stop-opacity",.16);
-    gB.append("rect").attr("x",x(0)).attr("y",axisY-12).attr("width",x(62)-x(0)).attr("height",24).attr("rx",12).attr("fill","url(#vf-delg)");
-
-    // bottom axis (use host .axis class for light theme)
-    gB.append("g").attr("class","axis").attr("transform","translate(0,"+(axisY+22)+")")
-      .call(d3.axisBottom(x).ticks(6).tickFormat(d=>d+"%"));
-
-    gB.append("text").attr("x",x(0)).attr("y",axisY+58).attr("fill",RED).attr("font-size",12).text("◀ kept human");
-    gB.append("text").attr("x",x(62)).attr("y",axisY+58).attr("text-anchor","end").attr("fill",GREEN).attr("font-size",12).text("delegated to AI ▶");
-    gB.append("text").attr("x",W/2).attr("y",20).attr("text-anchor","middle").attr("fill",INK).attr("font-size",13).attr("font-weight",600).text("Share of developers already doing each task with AI");
-
-    // semantic cliff: exploration tasks (>=30% now) vs production/judgment tasks (<30%)
-    const sorted = TASKS.slice().sort((a,b)=>b.now-a.now);
-    const THR = 30;
-    const cliffX = x(THR);
-
-    // cliff divider
-    gB.append("line").attr("x1",cliffX).attr("x2",cliffX).attr("y1",m.t+6).attr("y2",axisY+10)
-      .attr("stroke",SUB).attr("stroke-dasharray","4 4").attr("opacity",0).transition().delay(700).attr("opacity",0.55);
-    gB.append("text").attr("x",cliffX).attr("y",m.t-4).attr("text-anchor","middle").attr("fill",SUB).attr("font-size",11).attr("font-style","italic")
-      .attr("opacity",0).text("the trust cliff").transition().delay(800).attr("opacity",0.9);
-
-    sorted.forEach((d,i)=>{
-      const cx = x(d.now), cy = axisY, lift = (i%2?-1:1)*(28+((i*23)%70));
-      const expl = d.now >= THR;
-      const col = expl ? GREEN : RED;
-      const g = gB.append("g").attr("opacity",0);
-      // connector from dot to label
-      g.append("line").attr("x1",cx).attr("x2",cx).attr("y1",cy).attr("y2",cy+lift).attr("stroke",CONN);
-      g.append("circle").attr("cx",cx).attr("cy",cy).attr("r",0).attr("fill",col).attr("stroke",DOTSTROKE).attr("stroke-width",1).style("cursor","pointer")
-        .on("mousemove",(e)=>showTip(e,"<b>"+d.task+"</b><br>AI now "+d.now+"% · \"mostly AI\" "+d.mostly+"% · won't use "+d.refused+"%")).on("mouseleave",hideTip)
-        .transition().duration(500).delay(i*55).attr("r",Math.max(5,Math.sqrt(d.n)/22));
-      g.append("text").attr("x",cx).attr("y",cy+lift+(lift<0?-2:11)).attr("text-anchor","middle").attr("fill",INK).attr("font-size",10.5)
-        .text(d.task.length>22?d.task.slice(0,21)+"…":d.task);
-      g.append("text").attr("x",cx).attr("y",cy+lift+(lift<0?-15:24)).attr("text-anchor","middle").attr("fill",col).attr("font-size",10).attr("font-weight",600)
-        .text(d.now+"%");
-      g.transition().duration(400).delay(i*55).attr("opacity",1);
-    });
-  })();
-
-  /* ============ Legends ============ */
-  const legendAtro =
-    '<span class="legend-item"><span class="swatch" style="background:'+RED+'"></span>▲ % who feel AI is eroding their own skills</span>' +
-    '<span class="legend-item"><span class="swatch" style="background:'+GREEN+'"></span>▼ AI-daily salary premium (USA)</span>';
-  const legendTrust =
-    '<span class="legend-item"><span class="swatch" style="background:'+GREEN+'"></span>exploration (search, write, learn, debug)</span>' +
-    '<span class="legend-item"><span class="swatch" style="background:'+RED+'"></span>production / judgment (commit, plan, deploy)</span>' +
-    '<span class="legend-item" style="color:'+SUB+'">dot size = sample</span>';
-
-  function setView(view){
-    const isAtro = view === "atrophy";
-    gA.style("display", isAtro ? null : "none");
-    gB.style("display", isAtro ? "none" : null);
-    d3.select("#vf-title").text(isAtro ? "Skill atrophy vs AI pay premium · by experience" : "The trust boundary · delegation spectrum by task");
-    d3.select("#vf-legend").html(isAtro ? legendAtro : legendTrust);
-    d3.selectAll("#vf-controls .pill").classed("active", function(){
-      return this.getAttribute("data-view") === view;
-    });
-    hideTip();
+  function pad(arr) {
+    var lo = d3.min(arr), hi = d3.max(arr);
+    var p = (hi - lo) * 0.12 || 1;
+    return [lo - p, hi + p];
   }
 
-  d3.selectAll("#vf-controls .pill").on("click", function(){
-    setView(this.getAttribute("data-view"));
+  function render(animate) {
+    var dur = animate ? 600 : 0;
+    var xv = TASKS.map(function (d) { return d[xKey]; });
+    var yv = TASKS.map(function (d) { return d[yKey]; });
+    var xd = pad(xv), yd = pad(yv);
+    var x = d3.scaleLinear().domain(xd).range([0, iW]);
+    var y = d3.scaleLinear().domain(yd).range([iH, 0]);
+
+    // axes
+    gx.transition().duration(dur).call(d3.axisBottom(x).ticks(6).tickSize(6).tickPadding(6));
+    gy.transition().duration(dur).call(d3.axisLeft(y).ticks(6).tickSize(6).tickPadding(6));
+    // grid
+    gGrid.selectAll(".gx").data([0]).join("g").attr("class", "gx").attr("transform", "translate(0," + iH + ")")
+      .transition().duration(dur).call(d3.axisBottom(x).ticks(6).tickSize(-iH).tickFormat(""));
+    gGrid.selectAll(".gy").data([0]).join("g").attr("class", "gy")
+      .transition().duration(dur).call(d3.axisLeft(y).ticks(6).tickSize(-iW).tickFormat(""));
+
+    xTitle.text(METRICS[xKey] + " →");
+    yTitle.text(METRICS[yKey] + " →");
+
+    // median crosshair
+    var xMed = d3.median(TASKS, function (d) { return d[xKey]; });
+    var yMed = d3.median(TASKS, function (d) { return d[yKey]; });
+    var mx = x(xMed), my = y(yMed);
+    gMed.selectAll("line.vf-med-v").data([0]).join(
+      function (e) { return e.append("line").attr("class", "vf-med-v"); }, function (u) { return u; }
+    ).attr("stroke", "#94a3b8").attr("stroke-dasharray", "5 6").attr("stroke-width", 1.2)
+      .transition().duration(dur).attr("x1", mx).attr("x2", mx).attr("y1", 0).attr("y2", iH);
+    gMed.selectAll("line.vf-med-h").data([0]).join(
+      function (e) { return e.append("line").attr("class", "vf-med-h"); }, function (u) { return u; }
+    ).attr("stroke", "#94a3b8").attr("stroke-dasharray", "5 6").attr("stroke-width", 1.2)
+      .transition().duration(dur).attr("x1", 0).attr("x2", iW).attr("y1", my).attr("y2", my);
+
+    // subtle corner annotations (describe the default now x mostly reading)
+    gCorner.selectAll("*").remove();
+    gCorner.append("text").attr("x", iW - 4).attr("y", 14).attr("text-anchor", "end")
+      .attr("fill", "#94a3b8").style("font-size", "11px").style("font-weight", "900").style("opacity", 0.7)
+      .text("▲ AI takes it");
+    gCorner.append("text").attr("x", 4).attr("y", iH - 6).attr("text-anchor", "start")
+      .attr("fill", "#94a3b8").style("font-size", "11px").style("font-weight", "900").style("opacity", 0.7)
+      .text("▼ humans keep it");
+
+    // dot radius encodes # respondents (n); subtle since n is near-uniform
+    var rScale = d3.scaleSqrt().domain(d3.extent(TASKS, function (d) { return d.n; })).range([6, 13]);
+    function rOf(d) { return rScale(d.n); }
+
+    // dots (colored by work-category)
+    var dots = gDots.selectAll("circle.dot").data(TASKS, function (d) { return d.task; });
+    dots.enter().append("circle").attr("class", "dot")
+      .attr("cx", function (d) { return x(d[xKey]); })
+      .attr("cy", function (d) { return y(d[yKey]); })
+      .attr("r", rOf)
+      .attr("fill", function (d) { return catColor(d.task); })
+      .attr("stroke", "#ffffff").attr("stroke-width", 1.4)
+      .on("mouseover", onOver).on("mousemove", onMove).on("mouseout", onOut)
+      .on("click", function (e, d) { e.stopPropagation(); toggle(d); })
+      .merge(dots)
+      .attr("fill", function (d) { return catColor(d.task); })
+      .transition().duration(dur)
+      .attr("cx", function (d) { return x(d[xKey]); })
+      .attr("cy", function (d) { return y(d[yKey]); })
+      .attr("r", rOf)
+      .attr("fill-opacity", function (d) { return selected ? (d.task === selected ? 0.95 : 0.2) : 0.8; })
+      .attr("stroke-opacity", function (d) { return selected && d.task !== selected ? 0.2 : 1; })
+      .attr("stroke-width", function (d) { return d.task === selected ? 2 : 1.4; });
+
+    // labels: candidate-position placement. Try 8 spots snug around the dot
+    // (right/left/top/bottom + 4 diagonals) — first free one wins, NO leader.
+    // Only when every adjacent spot is blocked does the label spiral out to free
+    // space WITH a leader. "free" = overlaps NO dot and NO already-placed label
+    // (strictly zero overlap). Recomputed each render.
+    var FS = 10.5, PADX = 3, PADY = 2, OFF = 4;
+    gLab.selectAll("*").remove();
+    gLead.selectAll("*").remove();
+    var LB = TASKS.map(function (d) { return { d: d, tx: x(d[xKey]), ty: y(d[yKey]), r: rOf(d) }; });
+    LB.forEach(function (o) {
+      var t = gLab.append("text").attr("class", "label")
+        .style("pointer-events", "none").style("font-size", FS + "px")
+        .style("opacity", selected ? (o.d.task === selected ? 1 : 0.22) : 1)
+        .attr("text-anchor", "middle").text(short(o.d.task));
+      o.node = t.node();
+      var bb = o.node.getBBox();
+      o.hw = bb.width / 2 + PADX; o.hh = bb.height / 2 + PADY;
+    });
+    var placed = [];
+    // these labels always get a leader (association is otherwise ambiguous)
+    var FORCE_LEAD = { "Project planning": 1, "Learning about a codebase": 1, "Documenting code": 1, "Testing code": 1 };
+    function boxAt(o, cx, cy) { return { x0: cx - o.hw, y0: cy - o.hh, x1: cx + o.hw, y1: cy + o.hh }; }
+    function rOver(a, b) { return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1; }
+    function hitsDot(box, cx, cy, cr) {
+      var nx = Math.max(box.x0, Math.min(cx, box.x1)), ny = Math.max(box.y0, Math.min(cy, box.y1));
+      return (cx - nx) * (cx - nx) + (cy - ny) * (cy - ny) < (cr + 1) * (cr + 1);
+    }
+    function free(o, cx, cy) {
+      var box = boxAt(o, cx, cy), k;
+      if (box.x0 < 0 || box.x1 > iW || box.y0 < 1 || box.y1 > iH - 1) return false;
+      for (k = 0; k < placed.length; k++) if (rOver(box, placed[k])) return false;
+      for (k = 0; k < LB.length; k++) if (hitsDot(box, LB[k].tx, LB[k].ty, LB[k].r)) return false;
+      return true;
+    }
+    LB.forEach(function (o) {
+      var dx = o.r + OFF + o.hw, dy = o.r + OFF + o.hh, chosen = null, c;
+      var cands = [
+        [o.tx + dx, o.ty], [o.tx + dx, o.ty - dy], [o.tx + dx, o.ty + dy],
+        [o.tx - dx, o.ty], [o.tx - dx, o.ty - dy], [o.tx - dx, o.ty + dy],
+        [o.tx, o.ty - dy], [o.tx, o.ty + dy]
+      ];
+      for (c = 0; c < cands.length && !chosen; c++)
+        if (free(o, cands[c][0], cands[c][1])) chosen = { x: cands[c][0], y: cands[c][1], lead: false };
+      if (!chosen) {                                   // crowded: spiral outward, with a leader
+        for (var dist = o.r + 24; dist <= 180 && !chosen; dist += 11)
+          for (var a = 0; a < 16 && !chosen; a++) {
+            var ang = a * Math.PI / 8, sx = o.tx + Math.cos(ang) * dist, sy = o.ty + Math.sin(ang) * dist;
+            if (free(o, sx, sy)) chosen = { x: sx, y: sy, lead: true };
+          }
+        if (!chosen) chosen = { x: cands[0][0], y: cands[0][1], lead: true };
+      }
+      o.fx = chosen.x; o.fy = chosen.y; o.lead = chosen.lead || !!FORCE_LEAD[o.d.task];
+      placed.push(boxAt(o, o.fx, o.fy));
+      d3.select(o.node).attr("x", o.fx).attr("y", o.fy + FS * 0.34);
+    });
+    LB.forEach(function (o) {                          // leaders for displaced or explicitly-flagged labels
+      if (!o.lead) return;
+      var ex = Math.max(o.fx - o.hw, Math.min(o.tx, o.fx + o.hw));
+      var ey = Math.max(o.fy - o.hh, Math.min(o.ty, o.fy + o.hh));
+      var vx = ex - o.tx, vy = ey - o.ty, m = Math.hypot(vx, vy) || 1;   // start at the dot's edge
+      gLead.append("line").attr("x1", o.tx + vx / m * o.r).attr("y1", o.ty + vy / m * o.r).attr("x2", ex).attr("y2", ey)
+        .attr("stroke", "#6b7890").attr("stroke-width", 1.1)
+        .style("opacity", selected ? (o.d.task === selected ? 0.95 : 0.18) : 0.9);
+    });
+  }
+
+  function onOver(e, d) {
+    tip.html(
+      "<strong style='display:block;margin-bottom:3px'>" + short(d.task) + "</strong>" +
+      KEYS.map(function (k) { return DETAIL_LABEL[k] + ": " + d[k].toFixed(1) + "%"; }).join("<br>")
+    ).classed("visible", true);
+    move(e);
+  }
+  function onMove(e) { move(e); }
+  function onOut() { tip.classed("visible", false); }
+  function move(e) {
+    tip.style("left", (e.clientX) + "px").style("top", (e.clientY) + "px");
+  }
+
+  // ---- detail panel ----
+  var detail = document.getElementById("vf-detail");
+  function emptyDetail() {
+    detail.innerHTML = '<div style="color:var(--muted);font-size:12px;font-weight:800;text-align:center;padding:60px 8px">Click a task for its breakdown.</div>';
+  }
+  function showDetail(d) {
+    var rows = KEYS.map(function (k) {
+      return '<div style="margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">' +
+        '<span style="font-size:11px;color:#475569;font-weight:900">' + DETAIL_LABEL[k] + '</span>' +
+        '<span style="font-size:12px;color:#0f172a;font-weight:900;font-variant-numeric:tabular-nums">' + d[k].toFixed(1) + '%</span>' +
+        '</div>' +
+        '<div style="height:8px;border-radius:999px;background:#e8edf5;overflow:hidden">' +
+        '<div class="vf-fill" data-pct="' + d[k] + '" style="height:100%;width:0%;border-radius:999px;background:var(--night);transition:width .5s ease"></div>' +
+        '</div>' +
+        '</div>';
+    }).join("");
+    detail.innerHTML =
+      '<div style="font-size:14px;color:#0f172a;font-weight:900;margin-bottom:12px">' + short(d.task) + '</div>' +
+      rows;
+    // animate fills on next frame
+    var fills = detail.querySelectorAll(".vf-fill");
+    requestAnimationFrame(function () {
+      fills.forEach(function (el) {
+        var pct = Math.max(0, Math.min(100, parseFloat(el.getAttribute("data-pct"))));
+        el.style.width = pct + "%";
+      });
+    });
+  }
+  function toggle(d) {
+    if (selected === d.task) { selected = null; emptyDetail(); }
+    else { selected = d.task; showDetail(d); }
+    render(false);
+  }
+
+  // click empty space clears
+  svg.on("click", function (e) {
+    if (e.target === svg.node() || e.target === g.node()) {
+      if (selected) { selected = null; emptyDetail(); render(false); }
+    }
   });
 
-  // default = atrophy
-  setView("atrophy");
+  // ---- category legend (+ a size note) inside the viz-card ----
+  function buildLegend() {
+    var el = document.getElementById("vf-legend");
+    if (!el) return;
+    var html = CATS.map(function (c) {
+      return '<span class="legend-item">' +
+        '<span class="swatch" style="background:' + c.color + '"></span>' + c.cat +
+        '</span>';
+    }).join("");
+    html += '<span class="legend-item">' +
+      '<span class="swatch" style="background:#94a3b8"></span>dot size = # respondents' +
+      '</span>';
+    el.innerHTML = html;
+  }
+
+  // ---- init ----
+  buildLegend();
+  emptyDetail();
+  render(false);
 })();
 
 // Source script block 4.
@@ -950,10 +1130,14 @@ renderRedraft();
       },
     ],
     verify: [
-      { fire: () => click('#vf [data-view="atrophy"]') },
+      { fire: () => {} },
       {
-        html: '<div class="micro"><b>Trust has a task boundary.</b> Developers let AI search and draft, but hold the line on review, planning, and deployment.</div>',
-        fire: () => click('#vf [data-view="trust"]'),
+        html: '<div class="micro"><b>AI takes the routine.</b> Search, writing, and debugging sit top-right \u2014 high use, high delegation.</div>',
+        fire: () => {},
+      },
+      {
+        html: '<div class="micro"><b>Humans keep the judgment.</b> Project planning, review, and deployment stay bottom-left \u2014 the work AI cannot take.</div>',
+        fire: () => {},
       },
     ],
     clusters: [

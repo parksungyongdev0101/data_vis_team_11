@@ -94,7 +94,7 @@
           <div class="viz-body">
             <svg
               id="gi-svg"
-              viewBox="0 0 980 460"
+              viewBox="0 0 980 520"
               role="img"
               aria-label="US developer salary by threat perception — three flat clouds"
             ></svg>
@@ -124,7 +124,7 @@
           <div class="viz-body">
             <svg
               id="pay-svg"
-              viewBox="0 0 860 520"
+              viewBox="0 0 860 560"
               role="img"
               aria-label="AI pay gap and adoption by country"
             ></svg>
@@ -135,34 +135,25 @@
 
       <section class="scene" id="verify">
         <aside class="prompt">
-          <div class="scene-num">Act 3 · The trap</div>
-          <h2>The trap isn't generation — it's verification.</h2>
-          <div class="micro">
-            Juniors earn the same AI pay premium as seniors — but they're ~4×
-            more likely to feel AI hollowing out their own problem-solving (35%
-            vs 8%). The risk is developmental: the skill to catch AI's errors is
-            the one fading.
-          </div>
+          <div class="scene-num">Act 3 · Who does what</div>
+          <h2>AI takes the tasks — you keep the judgment.</h2>
+          <div class="micro">AI handles the routine generation (top-right: search, writing, debugging). The work that stays human is planning, review, and architecture — the judgment AI can't take. Click a task for its breakdown.</div>
         </aside>
         <div class="viz-card">
           <div class="viz-head">
-            <div class="viz-title" id="vf-title">
-              Skill atrophy vs AI pay premium · by experience
-            </div>
+            <div class="viz-title">What developers do with AI · by task (SO 2025)</div>
             <div class="controls" id="vf-controls">
-              <button class="pill active" data-view="atrophy">
-                Skill atrophy
-              </button>
-              <button class="pill" data-view="trust">Trust boundary</button>
+              <label style="font-size:11px;color:var(--muted);font-weight:900;display:inline-flex;align-items:center;gap:6px">X
+                <select id="vf-xsel" class="pill" style="cursor:pointer;width:148px"></select></label>
+              <label style="font-size:11px;color:var(--muted);font-weight:900;display:inline-flex;align-items:center;gap:6px">Y
+                <select id="vf-ysel" class="pill" style="cursor:pointer;width:148px"></select></label>
             </div>
           </div>
           <div class="viz-body">
-            <svg
-              id="vf-svg"
-              viewBox="0 0 980 480"
-              role="img"
-              aria-label="Skill atrophy vs AI pay premium by experience, and the AI trust boundary by task"
-            ></svg>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:16px;align-items:start">
+              <svg id="vf-svg" viewBox="0 0 640 470" role="img" aria-label="Developer tasks by AI use and delegation, colored by work category"></svg>
+              <div id="vf-detail" style="border:1px solid #e6ebf2;border-radius:8px;padding:14px;background:#fbfcfe;min-height:200px"></div>
+            </div>
             <div class="legend" id="vf-legend"></div>
           </div>
         </div>
