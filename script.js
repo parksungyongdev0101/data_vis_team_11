@@ -1108,11 +1108,11 @@ renderRedraft();
     threat: [
       { fire: () => window.__threatSetMode && window.__threatSetMode("ai", true) },
       {
-        html: '<div class="micro"><b>Fear is not avoidance.</b> Developers who feel threatened use AI <b>more</b>, not less — 49% use it daily vs 40% of the calm. Their cloud sits highest on this axis.</div>',
+        html: '<div class="micro"><b>Fear is not retreat.</b> The threatened reach for AI <b>more</b> — 49% use it daily vs 40% of the calm. Their cloud sits highest on this axis.</div>',
         fire: () => window.__threatSetMode && window.__threatSetMode("ai", true),
       },
       {
-        html: '<div class="micro"><b>Yet the fear never touches pay.</b> Swap the Y axis to salary and the three clouds drop into line — within one country, the threatened and the calm earn the same (~$150K). The fear is psychological, not financial.</div>',
+        html: '<div class="micro"><b>But it never reaches their pay.</b> Swap the Y axis to salary and the clouds fall into line — within one country, threatened and calm land at the same ~$150K. The fear is psychological, not financial.</div>',
         fire: () => window.__threatSetMode && window.__threatSetMode("salary", true),
       },
     ],
