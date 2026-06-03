@@ -231,9 +231,12 @@ main {
   gap: 48px;
   min-height: 92vh;
   padding: 58px 40px;
-  border-left: 2px solid var(--line);
+  /* border-left: 2px solid var(--line);
   border-right: 2px solid var(--line);
-  border-bottom: 2px solid var(--line);
+  border-bottom: 2px solid var(--line); */
+}
+#next {
+  padding-bottom: 108px;
 }
 .prompt {
   position: sticky;
@@ -654,10 +657,10 @@ footer {
   font-weight: 700;
 }
 .playbook {
-  padding: 70px 42px 86px;
-  border-left: 2px solid var(--line);
+  padding: 110px 42px 118px;
+  /* border-left: 2px solid var(--line);
   border-right: 2px solid var(--line);
-  border-bottom: 2px solid var(--line);
+  border-bottom: 2px solid var(--line); */
   background: var(--panel);
 }
 .playbook h2 {
@@ -727,6 +730,12 @@ footer {
   .playbook-grid article {
     border-right: 0;
     border-bottom: 2px solid var(--line);
+  }
+  #next {
+    padding-bottom: 78px;
+  }
+  .playbook {
+    padding: 88px 24px 96px;
   }
 }
 
