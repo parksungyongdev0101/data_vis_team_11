@@ -318,20 +318,24 @@ const palette = {
       .attr("y", d=>gy(d.years[Y].gap))
       .attr("dy", d=>{ const rr=gr(d.years[Y].n); return rr>15 ? "0.32em" : (-rr-4); });
     wm.transition(tt).text(Y);
-    d3.selectAll("#pay-years .pay-yr").classed("active", d=>d===Y);
+    const range = document.getElementById("pay-year-range");
+    if (range) range.value = idx;
+    const out = document.getElementById("pay-year-out");
+    if (out) out.textContent = Y;
   }
 
   // ======================================================================
   // Controls: year chips (injected into #pay-controls), play, view pills
   // ======================================================================
-  // build year chips into the controls bar, between play and the view pills
+  // build a year slider into the controls bar, next to play
   const yrWrap = d3.select("#pay-controls").append("span")
-    .attr("id","pay-years").attr("class","legend").style("gap","6px");
-  yrWrap.selectAll("button").data(YEARS).join("button")
-    .attr("class","pill pay-yr")
-    .classed("active", d=>d===YEARS[0])
-    .text(d=>d)
-    .on("click",(e,d)=>{ stop(); renderGap(YEARS.indexOf(d), true); });
+    .attr("id","pay-years").attr("class","year-slider");
+  yrWrap.append("input")
+    .attr("type","range").attr("id","pay-year-range")
+    .attr("min",0).attr("max",YEARS.length-1).attr("step",1).attr("value",0)
+    .attr("aria-label","Year")
+    .on("input", function(){ stop(); renderGap(+this.value, true); });
+  yrWrap.append("output").attr("id","pay-year-out").text(YEARS[0]);
 
   let playing=false, timer=null;
   function stop(){ playing=false; if(timer) clearTimeout(timer); timer=null; d3.select("#pay-play").text("▶ Play"); }
@@ -1114,13 +1118,8 @@ renderRedraft();
         fire: () => window.__threatSetMode && window.__threatSetMode("salary", true),
       },
     ],
-    pay: [
-      { fire: () => click('#pay [data-view="gap"]') },
-      {
-        html: '<div class="micro"><b>Watch the gap widen.</b> 2023 → 2025, AI users pull ahead of non-users in most countries.</div>',
-        fire: () => click("#pay-play"),
-      },
-    ],
+    // ACT 2 (the "pay" scene) is intentionally excluded from scrollytelling:
+    // its animation is driven only by the ▶ Play button in the chart.
     verify: [
       { fire: () => {} },
       {
