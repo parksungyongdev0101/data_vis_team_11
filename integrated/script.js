@@ -449,7 +449,9 @@ const palette = {
   };
   var KEYS = ["now", "mostly", "planned", "refused"];
 
-  var xKey = "now", yKey = "mostly", selected = null;
+  var xKey = "now", yKey = "mostly", selected = null, highlight = null;
+  // true when task d is part of the active scroll highlight set
+  function inHi(d) { return highlight && highlight.indexOf(d.task) !== -1; }
 
   // ---- selects ----
   var xSel = document.getElementById("vf-xsel");
@@ -556,9 +558,21 @@ const palette = {
       .attr("cx", function (d) { return x(d[xKey]); })
       .attr("cy", function (d) { return y(d[yKey]); })
       .attr("r", rOf)
-      .attr("fill-opacity", function (d) { return selected ? (d.task === selected ? 0.95 : 0.2) : 0.8; })
-      .attr("stroke-opacity", function (d) { return selected && d.task !== selected ? 0.2 : 1; })
-      .attr("stroke-width", function (d) { return d.task === selected ? 2 : 1.4; });
+      .attr("fill-opacity", function (d) {
+        if (selected) return d.task === selected ? 0.95 : 0.2;
+        if (highlight) return inHi(d) ? 0.95 : 0.12;
+        return 0.8;
+      })
+      .attr("stroke-opacity", function (d) {
+        if (selected) return d.task === selected ? 1 : 0.2;
+        if (highlight) return inHi(d) ? 1 : 0.2;
+        return 1;
+      })
+      .attr("stroke-width", function (d) {
+        if (d.task === selected) return 2;
+        if (highlight && inHi(d)) return 2.4;
+        return 1.4;
+      });
 
     // labels: candidate-position placement. Try 8 spots snug around the dot
     // (right/left/top/bottom + 4 diagonals) — first free one wins, NO leader.
@@ -572,7 +586,7 @@ const palette = {
     LB.forEach(function (o) {
       var t = gLab.append("text").attr("class", "label")
         .style("pointer-events", "none").style("font-size", FS + "px")
-        .style("opacity", selected ? (o.d.task === selected ? 1 : 0.22) : 1)
+        .style("opacity", selected ? (o.d.task === selected ? 1 : 0.22) : (highlight ? (inHi(o.d) ? 1 : 0.18) : 1))
         .attr("text-anchor", "middle").text(short(o.d.task));
       o.node = t.node();
       var bb = o.node.getBBox();
@@ -622,7 +636,7 @@ const palette = {
       var vx = ex - o.tx, vy = ey - o.ty, m = Math.hypot(vx, vy) || 1;   // start at the dot's edge
       gLead.append("line").attr("x1", o.tx + vx / m * o.r).attr("y1", o.ty + vy / m * o.r).attr("x2", ex).attr("y2", ey)
         .attr("stroke", palette.muted).attr("stroke-width", 1.1)
-        .style("opacity", selected ? (o.d.task === selected ? 0.95 : 0.18) : 0.9);
+        .style("opacity", selected ? (o.d.task === selected ? 0.95 : 0.18) : (highlight ? (inHi(o.d) ? 0.95 : 0.15) : 0.9));
     });
   }
 
@@ -695,6 +709,13 @@ const palette = {
       '</span>';
     el.innerHTML = html;
   }
+
+  // ---- scroll highlight: emphasize a set of tasks, fade the rest ----
+  // Driven by the ACT 3 scrollytelling steps via window.__verifySetHighlight.
+  window.__verifySetHighlight = function (tasks) {
+    highlight = tasks && tasks.length ? tasks : null;
+    render(true);
+  };
 
   // ---- init ----
   buildLegend();
@@ -1121,14 +1142,18 @@ renderRedraft();
     // ACT 2 (the "pay" scene) is intentionally excluded from scrollytelling:
     // its animation is driven only by the ▶ Play button in the chart.
     verify: [
-      { fire: () => {} },
+      { fire: () => window.__verifySetHighlight && window.__verifySetHighlight(null) },
       {
         html: '<div class="micro"><b>AI takes the routine.</b> Search, writing, and debugging sit top-right \u2014 high use, high delegation.</div>',
-        fire: () => {},
+        fire: () => window.__verifySetHighlight && window.__verifySetHighlight([
+          "Search for answers", "Writing code", "Debugging or fixing code"
+        ]),
       },
       {
         html: '<div class="micro"><b>Humans keep the judgment.</b> Project planning, review, and deployment stay bottom-left \u2014 the work AI cannot take.</div>',
-        fire: () => {},
+        fire: () => window.__verifySetHighlight && window.__verifySetHighlight([
+          "Project planning", "Committing and reviewing code", "Deployment and monitoring"
+        ]),
       },
     ],
     clusters: [
