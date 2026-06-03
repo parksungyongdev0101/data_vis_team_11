@@ -1049,15 +1049,27 @@ function card(skill, rank, meta, score, move) {
 function renderSkillList(items) {
   const el = document.getElementById("skill-board");
   const existing = new Map([...el.querySelectorAll(".skill-card")].map(card => [card.dataset.skill, card]));
+  const previousTops = new Map([...existing.entries()].map(([name, node]) => [
+    name,
+    Number.parseFloat(node.style.top) || 0
+  ]));
+
   items.forEach(d => {
     let node = existing.get(d.name);
+    const isNew = !node;
     if (!node) {
       el.insertAdjacentHTML("beforeend", card(d, d.rank, d.meta, d.score, d.move));
       node = el.querySelector(`.skill-card[data-skill="${CSS.escape(d.name)}"]`);
     }
-    node.style.top = `${(d.rank - 1) * 43}px`;
+
+    const nextTop = (d.rank - 1) * 43;
+    const previousTop = previousTops.has(d.name) ? previousTops.get(d.name) : nextTop;
+    node.style.transition = "none";
+    node.style.top = `${nextTop}px`;
     // Keep the rising card stacked above the others while it slides past them.
     node.style.zIndex = String(100 - d.rank);
+    node.style.transform = isNew ? "translateY(8px)" : `translateY(${previousTop - nextTop}px)`;
+    node.style.opacity = isNew ? "0" : "";
     node.classList.toggle("changed", d.move !== 0);
     node.querySelector(".rank").textContent = d.rank;
     node.querySelector(".skill-meta").textContent = d.meta;
@@ -1066,12 +1078,21 @@ function renderSkillList(items) {
     badge.textContent = d.move > 0 ? `+${d.move}` : d.move < 0 ? `${d.move}` : "0";
     badge.classList.toggle("up", d.move > 0);
     badge.classList.toggle("down", d.move < 0);
+
+    node.offsetHeight;
+    node.style.transition = "transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease, box-shadow 0.2s ease";
+    node.style.transform = "translateY(0)";
+    node.style.opacity = "1";
+    window.clearTimeout(node._redraftTransitionTimer);
+    node._redraftTransitionTimer = window.setTimeout(() => {
+      node.style.transition = "";
+      node.style.transform = "";
+      node.style.opacity = "";
+    }, 700);
   });
   // NOTE: do NOT reorder the cards in the DOM here. Cards are positioned purely
-  // by their absolute `top`, so DOM order is visually irrelevant — and calling
-  // appendChild() on an already-attached node re-inserts it, which cancels its
-  // in-flight CSS `top` transition and makes the rank change snap (flicker)
-  // instead of animating. Stacking is handled by z-index above.
+  // by their absolute `top`, so DOM order is visually irrelevant, and calling
+  // appendChild() on an already-attached node cancels the in-flight animation.
 }
 function renderRedraft() {
   const scored = originalBoard.map(d => ({ ...d, score: scoreSkill(d) })).sort((a,b) => b.score - a.score).map((d, i) => ({ ...d, redraft: i + 1 }));
@@ -1091,24 +1112,35 @@ function renderRedraft() {
     ? `${personaName()} · ${state.weights.pop}/${state.weights.growth}/${state.weights.ai}`
     : "SO 2025";
 }
-["pop", "growth", "ai"].forEach(key => {
-  const input = document.getElementById(`weight-${key}`);
-  input.addEventListener("input", () => {
-    // Sliders only stage new weights — the board does not change until the
-    // Redraft button is pressed. Just update the weight readout + note.
-    state.weights[key] = Number(input.value);
-    document.getElementById(`weight-${key}-value`).value = state.weights[key];
-    document.getElementById("weight-note").textContent = `Custom ${personaName()} weights: popularity ${state.weights.pop}, momentum ${state.weights.growth}, AI fit ${state.weights.ai}.`;
-  });
-});
-document.getElementById("redraft-button").addEventListener("click", () => {
-  // Apply the staged slider weights with a single render. Cards keep their
-  // identity across renders, so changing each card's `top` animates it from
-  // its current spot to the new ranking via the CSS transition — no snap-back
-  // double render, which previously read as a flicker.
-  state.redrafted = true;
-  document.getElementById("redraft-button").textContent = "Redraft Again";
+function animateRedraftFromOriginal(delay = 260) {
+  state.redrafted = false;
   renderRedraft();
+  window.clearTimeout(state.redraftTimer);
+  state.redraftTimer = window.setTimeout(() => {
+    state.redrafted = true;
+    document.getElementById("redraft-button").textContent = "Redraft Again";
+    renderRedraft();
+  }, delay);
+}
+function handleRedraftClick() {
+  state.redraftManual = true;
+  animateRedraftFromOriginal();
+}
+document.addEventListener("click", event => {
+  if (!event.target.closest("#redraft-button")) return;
+  handleRedraftClick();
+});
+document.addEventListener("input", event => {
+  const match = event.target.id && event.target.id.match(/^weight-(pop|growth|ai)$/);
+  if (!match) return;
+  const key = match[1];
+  state.weights[key] = Number(event.target.value);
+  const output = document.getElementById(`weight-${key}-value`);
+  if (output) output.value = state.weights[key];
+  state.redraftManual = true;
+  document.getElementById("weight-note").textContent = `Custom ${personaName()} weights: popularity ${state.weights.pop}, momentum ${state.weights.growth}, AI fit ${state.weights.ai}.`;
+  document.getElementById("redraft-button").textContent = "Redraft Again";
+  animateRedraftFromOriginal(220);
 });
 
 function varColor(name) {
@@ -1126,6 +1158,16 @@ renderRedraft();
     const el = document.querySelector(sel);
     if (el) el.click();
   };
+  function setRedraft(want) {
+    if (state.redraftManual) return;
+    const t = document.getElementById("redraft-title");
+    const btn = document.getElementById("redraft-button");
+    if (!t || !btn) return;
+    const isRedrafted = /AI-era/i.test(t.textContent);
+    if (want && !isRedrafted) btn.click();
+    if (!want && isRedrafted) btn.click();
+  }
+
   // Per-scene step config. Step 0 reuses the scene's original prompt text.
   const CFG = {
     threat: [
