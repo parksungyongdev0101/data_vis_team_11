@@ -2,6 +2,40 @@ const { POINTS, PAY } = window.INDEX_SCROLL_THREAT_DATA || {};
 const { GAP, CATCH, SHORT } = window.INDEX_SCROLL_PAY_DATA || {};
 const { ATRO, PREM, TASKS } = window.INDEX_SCROLL_VERIFY_DATA || {};
 const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {};
+const readColor = name =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || `var(${name})`;
+const palette = {
+  ink: readColor("--ink"),
+  text: readColor("--text"),
+  textSoft: readColor("--text-soft"),
+  muted: readColor("--muted"),
+  inverse: readColor("--inverse"),
+  grid: readColor("--grid"),
+  surfaceSoft: readColor("--surface-soft"),
+  night: readColor("--night"),
+  greenDark: readColor("--green-dark"),
+  blue: readColor("--blue"),
+  cyan: readColor("--cyan"),
+  red: readColor("--red"),
+  orange: readColor("--orange"),
+  gold: readColor("--gold"),
+  violet: readColor("--violet"),
+  pink: readColor("--pink"),
+  slate: readColor("--slate"),
+  catCoding: readColor("--cat-coding"),
+  catQuality: readColor("--cat-quality"),
+  catDocs: readColor("--cat-docs"),
+  catLearning: readColor("--cat-learning"),
+  catPlanning: readColor("--cat-planning"),
+  catOps: readColor("--cat-ops"),
+  catProblem: readColor("--cat-problem"),
+  catDesign: readColor("--cat-design"),
+  catComm: readColor("--cat-comm"),
+  catDomain: readColor("--cat-domain"),
+  catFund: readColor("--cat-fund"),
+  catAi: readColor("--cat-ai"),
+  catAdapt: readColor("--cat-adapt")
+};
 // Source script block 1.
 // Act 1 — "Y-axis morph": the SAME developer dots first sit on a REAL AI-use
 // frequency axis (threatened devs skew higher), then slide to a salary axis where
@@ -61,8 +95,8 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   });
 
   const colorOf = grp => grp==="Feel threatened" ? "var(--red)"
-                       : grp==="Not threatened" ? "#0f766e"
-                       : "#94a3b8";
+                       : grp==="Not threatened" ? palette.greenDark
+                       : palette.slate;
 
   // left axes (salary + AI), cross-faded by mode
   const axS = svg.append("g").attr("class","axis").attr("transform","translate("+m.l+",0)")
@@ -71,12 +105,12 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .style("opacity",0).call(d3.axisLeft(yAI).tickValues([0,1,2,3,4]).tickFormat(i=>AI.levels[i]));
   const axTitle = svg.append("text").attr("transform","rotate(-90)")
     .attr("x",-H/2).attr("y",16).attr("text-anchor","middle")
-    .attr("fill","#667085").attr("font-size",12).text("AI-use frequency");
+    .attr("fill",palette.muted).attr("font-size",12).text("AI-use frequency");
 
   // developer dots (start in AI-cadence positions)
   const dots = svg.append("g").selectAll("circle").data(nodes).join("circle")
     .attr("r",R).attr("fill",d=>colorOf(d.grp)).attr("fill-opacity",0.5)
-    .attr("stroke","#fff").attr("stroke-width",0.4).style("cursor","pointer")
+    .attr("stroke",palette.inverse).attr("stroke-width",0.4).style("cursor","pointer")
     .attr("cx",d=>d.cx+d.aiOX).attr("cy",d=>d.aiY)
     .on("mousemove",(e,d)=>showTip(e,"<b>"+d.grp+"</b><br>salary "+fmt$(d.v)+"<br>AI use ≈ "+AI.levels[Math.round(Math.max(0,Math.min(4,d.ai)))]))
     .on("mouseleave",hideTip);
@@ -86,10 +120,10 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   groups.forEach(grp=>{
     const cx=x(grp);
     med[grp]={
-      bar: medG.append("line").attr("x1",cx-46).attr("x2",cx+46).attr("stroke","#1f2c44").attr("stroke-width",2.5),
-      lab: medG.append("text").attr("x",cx).attr("text-anchor","middle").attr("fill","#1f2c44").attr("font-size",12).attr("font-weight",700)
+      bar: medG.append("line").attr("x1",cx-46).attr("x2",cx+46).attr("stroke",palette.ink).attr("stroke-width",2.5),
+      lab: medG.append("text").attr("x",cx).attr("text-anchor","middle").attr("fill",palette.ink).attr("font-size",12).attr("font-weight",700)
     };
-    svg.append("text").attr("x",cx).attr("y",H-m.b+18).attr("text-anchor","middle").attr("fill","#667085").attr("font-size",12).text(grp);
+    svg.append("text").attr("x",cx).attr("y",H-m.b+18).attr("text-anchor","middle").attr("fill",palette.muted).attr("font-size",12).text(grp);
     svg.append("text").attr("x",cx).attr("y",H-m.b+34).attr("text-anchor","middle").attr("fill","var(--red)").attr("font-size",11).text(threatByGroup[grp].n.toLocaleString()+" devs");
   });
 
@@ -98,14 +132,14 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   const medLinePts = [{xx:m.l, yy:ySal(150000)}].concat(
     groups.map(g=>({xx:x(g), yy:ySal(threatByGroup[g].median_comp)})));
   const connector = svg.append("path").attr("fill","none")
-    .attr("stroke","#1f2c44").attr("stroke-width",1.5).attr("stroke-dasharray","5 4").attr("opacity",0)
+    .attr("stroke",palette.ink).attr("stroke-width",1.5).attr("stroke-dasharray","5 4").attr("opacity",0)
     .attr("d", d3.line().x(d=>d.xx).y(d=>d.yy)(medLinePts));
   const flatNote = svg.append("text").attr("x",W-m.r-80).attr("y",ySal(150000)-14)
-    .attr("fill","#1f2c44").attr("font-size",16).attr("font-weight",700).attr("font-style","italic").attr("opacity",0).text("medians ≈ flat");
+    .attr("fill",palette.ink).attr("font-size",16).attr("font-weight",700).attr("font-style","italic").attr("opacity",0).text("medians ≈ flat");
 
   // dynamic caption at top of plot
   const modeNote = svg.append("text").attr("x",W/2).attr("y",m.t-26).attr("text-anchor","middle")
-    .attr("fill","#1f2c44").attr("font-size",19).attr("font-weight",700);
+    .attr("fill",palette.ink).attr("font-size",19).attr("font-weight",700);
 
   function setMode(mode, animate){
     const sal = mode==="salary";
@@ -132,8 +166,8 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
 
   d3.select("#gi-legend").html(
     '<span class="legend-item"><span class="swatch" style="background:var(--red)"></span>Feel threatened</span>' +
-    '<span class="legend-item"><span class="swatch" style="background:#0f766e"></span>Not threatened</span>' +
-    '<span class="legend-item"><span class="swatch" style="background:#94a3b8"></span>Unsure</span>' +
+    '<span class="legend-item"><span class="swatch" style="background:' + palette.greenDark + '"></span>Not threatened</span>' +
+    '<span class="legend-item"><span class="swatch" style="background:' + palette.slate + '"></span>Unsure</span>' +
     '<span class="legend-item" style="opacity:.8">Scroll: the Y axis morphs from AI-use frequency &rarr; salary.</span>'
   );
 
@@ -145,7 +179,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   "use strict";
   // ---- inlined data: Q2_geo_gap_years (gap / pay / n per year) ----
   // ---- inlined data: q2_country (2025 median pay vs AI-daily adoption) ----
-  const HIGH = "#0e7490", LOW = "#c2570c", YEARS = ["2023","2024","2025"];
+  const HIGH = palette.cyan, LOW = palette.orange, YEARS = ["2023","2024","2025"];
   const shortName = c => SHORT[c] || c;
   const fmtK = v => "$" + (v >= 1000 ? Math.round(v/1000) + "k" : Math.round(v));
   const signPct = v => (v > 0 ? "+" : "") + v + "%";
@@ -180,7 +214,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .attr("x", iw - 6).attr("y", ih - 6)
     .attr("text-anchor","end")
     .attr("font-size", 130).attr("font-weight", 800)
-    .attr("fill", "#eef1f6")
+    .attr("fill", palette.surfaceSoft)
     .text(YEARS[0]);
 
   // x gridlines at tick values
@@ -216,16 +250,16 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   gapLayer.append("line").attr("class","boundary-line")
     .attr("x1",0).attr("x2",iw)
     .attr("y1",gy(0)).attr("y2",gy(0))
-    .attr("stroke","#9aa6bb").attr("stroke-width",1.5).attr("stroke-dasharray","6 4");
+    .attr("stroke",palette.slate).attr("stroke-width",1.5).attr("stroke-dasharray","6 4");
   gapLayer.append("text")
     .attr("x",4).attr("y",gy(0)-7)
-    .attr("fill","#8b97ac").attr("font-size",11.5).attr("font-weight",600)
+    .attr("fill",palette.slate).attr("font-size",11.5).attr("font-weight",600)
     .text("parity — AI users earn the same");
 
   // top-right annotation: what "up" means
   gapLayer.append("text")
     .attr("x", iw).attr("y", 13).attr("text-anchor","end")
-    .attr("fill","#0f766e").attr("font-size",12.5).attr("font-weight",800)
+    .attr("fill",palette.greenDark).attr("font-size",12.5).attr("font-weight",800)
     .text("▲ above the line = AI users earn more");
 
   // bubbles (start at 2023)
@@ -234,7 +268,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .attr("class","pay-bub")
     .attr("fill", d=>d.tier==="high"?HIGH:LOW)
     .attr("fill-opacity",0.62)
-    .attr("stroke","#fff").attr("stroke-width",1)
+    .attr("stroke",palette.inverse).attr("stroke-width",1)
     .style("cursor","pointer")
     .attr("cx", d=>gx(d.years["2023"].pay))
     .attr("cy", d=>gy(d.years["2023"].gap))
@@ -254,7 +288,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .attr("text-anchor","middle")
     .attr("font-size",11).attr("font-weight",600)
     .attr("fill","var(--ink)")
-    .attr("paint-order","stroke").attr("stroke","#fff").attr("stroke-width",2.6)
+    .attr("paint-order","stroke").attr("stroke",palette.inverse).attr("stroke-width",2.6)
     .style("pointer-events","none")
     .text(d=>shortName(d.country));
 
@@ -365,12 +399,12 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
 
   // ---- work-category map (task -> {cat,color}); colorblind-safe palette ----
   var CATS = [
-    { cat: "Coding", color: "#0072B2" },
-    { cat: "Quality", color: "#009E73" },
-    { cat: "Docs", color: "#56B4E9" },
-    { cat: "Learning", color: "#E69F00" },
-    { cat: "Planning", color: "#CC79A7" },
-    { cat: "Ops", color: "#D55E00" }
+    { cat: "Coding", color: palette.catCoding },
+    { cat: "Quality", color: palette.catQuality },
+    { cat: "Docs", color: palette.catDocs },
+    { cat: "Learning", color: palette.catLearning },
+    { cat: "Planning", color: palette.catPlanning },
+    { cat: "Ops", color: palette.catOps }
   ];
   var CAT_COLOR = {};
   CATS.forEach(function (c) { CAT_COLOR[c.cat] = c.color; });
@@ -443,10 +477,10 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   var gy = g.append("g").attr("class", "axis");
   var xTitle = g.append("text")
     .attr("text-anchor", "middle").attr("x", iW / 2).attr("y", iH + 40)
-    .attr("fill", "#334155").style("font-size", "12px").style("font-weight", "900");
+    .attr("fill", palette.text).style("font-size", "12px").style("font-weight", "900");
   var yTitle = g.append("text")
     .attr("text-anchor", "middle").attr("transform", "rotate(-90)").attr("x", -iH / 2).attr("y", -42)
-    .attr("fill", "#334155").style("font-size", "12px").style("font-weight", "900");
+    .attr("fill", palette.text).style("font-size", "12px").style("font-weight", "900");
 
   var tip = d3.select("#tooltip");
 
@@ -482,20 +516,20 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     var mx = x(xMed), my = y(yMed);
     gMed.selectAll("line.vf-med-v").data([0]).join(
       function (e) { return e.append("line").attr("class", "vf-med-v"); }, function (u) { return u; }
-    ).attr("stroke", "#94a3b8").attr("stroke-dasharray", "5 6").attr("stroke-width", 1.2)
+    ).attr("stroke", palette.slate).attr("stroke-dasharray", "5 6").attr("stroke-width", 1.2)
       .transition().duration(dur).attr("x1", mx).attr("x2", mx).attr("y1", 0).attr("y2", iH);
     gMed.selectAll("line.vf-med-h").data([0]).join(
       function (e) { return e.append("line").attr("class", "vf-med-h"); }, function (u) { return u; }
-    ).attr("stroke", "#94a3b8").attr("stroke-dasharray", "5 6").attr("stroke-width", 1.2)
+    ).attr("stroke", palette.slate).attr("stroke-dasharray", "5 6").attr("stroke-width", 1.2)
       .transition().duration(dur).attr("x1", 0).attr("x2", iW).attr("y1", my).attr("y2", my);
 
     // subtle corner annotations (describe the default now x mostly reading)
     gCorner.selectAll("*").remove();
     gCorner.append("text").attr("x", iW - 4).attr("y", 14).attr("text-anchor", "end")
-      .attr("fill", "#94a3b8").style("font-size", "11px").style("font-weight", "900").style("opacity", 0.7)
+      .attr("fill", palette.slate).style("font-size", "11px").style("font-weight", "900").style("opacity", 0.7)
       .text("▲ AI takes it");
     gCorner.append("text").attr("x", 4).attr("y", iH - 6).attr("text-anchor", "start")
-      .attr("fill", "#94a3b8").style("font-size", "11px").style("font-weight", "900").style("opacity", 0.7)
+      .attr("fill", palette.slate).style("font-size", "11px").style("font-weight", "900").style("opacity", 0.7)
       .text("▼ humans keep it");
 
     // dot radius encodes # respondents (n); subtle since n is near-uniform
@@ -509,7 +543,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
       .attr("cy", function (d) { return y(d[yKey]); })
       .attr("r", rOf)
       .attr("fill", function (d) { return catColor(d.task); })
-      .attr("stroke", "#ffffff").attr("stroke-width", 1.4)
+      .attr("stroke", palette.inverse).attr("stroke-width", 1.4)
       .on("mouseover", onOver).on("mousemove", onMove).on("mouseout", onOut)
       .on("click", function (e, d) { e.stopPropagation(); toggle(d); })
       .merge(dots)
@@ -583,7 +617,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
       var ey = Math.max(o.fy - o.hh, Math.min(o.ty, o.fy + o.hh));
       var vx = ex - o.tx, vy = ey - o.ty, m = Math.hypot(vx, vy) || 1;   // start at the dot's edge
       gLead.append("line").attr("x1", o.tx + vx / m * o.r).attr("y1", o.ty + vy / m * o.r).attr("x2", ex).attr("y2", ey)
-        .attr("stroke", "#6b7890").attr("stroke-width", 1.1)
+        .attr("stroke", palette.muted).attr("stroke-width", 1.1)
         .style("opacity", selected ? (o.d.task === selected ? 0.95 : 0.18) : 0.9);
     });
   }
@@ -610,16 +644,16 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     var rows = KEYS.map(function (k) {
       return '<div style="margin-bottom:12px">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">' +
-        '<span style="font-size:11px;color:#475569;font-weight:900">' + DETAIL_LABEL[k] + '</span>' +
-        '<span style="font-size:12px;color:#0f172a;font-weight:900;font-variant-numeric:tabular-nums">' + d[k].toFixed(1) + '%</span>' +
+        '<span style="font-size:11px;color:var(--text-soft);font-weight:900">' + DETAIL_LABEL[k] + '</span>' +
+        '<span style="font-size:12px;color:var(--ink);font-weight:900;font-variant-numeric:tabular-nums">' + d[k].toFixed(1) + '%</span>' +
         '</div>' +
-        '<div style="height:8px;border-radius:999px;background:#e8edf5;overflow:hidden">' +
+        '<div style="height:8px;border-radius:999px;background:var(--surface-soft);overflow:hidden">' +
         '<div class="vf-fill" data-pct="' + d[k] + '" style="height:100%;width:0%;border-radius:999px;background:var(--night);transition:width .5s ease"></div>' +
         '</div>' +
         '</div>';
     }).join("");
     detail.innerHTML =
-      '<div style="font-size:14px;color:#0f172a;font-weight:900;margin-bottom:12px">' + short(d.task) + '</div>' +
+      '<div style="font-size:14px;color:var(--ink);font-weight:900;margin-bottom:12px">' + short(d.task) + '</div>' +
       rows;
     // animate fills on next frame
     var fills = detail.querySelectorAll(".vf-fill");
@@ -653,7 +687,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
         '</span>';
     }).join("");
     html += '<span class="legend-item">' +
-      '<span class="swatch" style="background:#94a3b8"></span>dot size = # respondents' +
+      '<span class="swatch" style="background:' + palette.slate + '"></span>dot size = # respondents' +
       '</span>';
     el.innerHTML = html;
   }
@@ -680,39 +714,6 @@ const state = {
   weights: { pop: 35, growth: 40, ai: 25 },
   redrafted: false
 };
-const personaText = {
-  seeker: {
-    dev: "Find a large market, then prove you can use AI without hiding your judgment.",
-    task: "For job seekers, portfolio work should show both AI-assisted speed and human verification.",
-    skill: "The strongest portfolio signals are problem framing, verification, and product context.",
-    redraft: "A job seeker should balance current demand with fast-growing AI-era stacks."
-  },
-  junior: {
-    dev: "The junior map is about learning depth: do not let shortcuts replace debugging practice.",
-    task: "Junior risk appears where AI is easy to use but hard to trust.",
-    skill: "Verification and debugging are the muscles to protect.",
-    redraft: "A junior should choose skills that create practice, not only output."
-  },
-  senior: {
-    dev: "The senior map is about leverage: accountability grows as generation gets cheaper.",
-    task: "Senior value concentrates around planning, architecture, review, and deployment boundaries.",
-    skill: "Architecture, tradeoff judgment, mentoring, and domain knowledge become premium skills.",
-    redraft: "A senior should favor stacks that connect AI to systems, risk, and architecture."
-  }
-};
-
-document.querySelectorAll(".persona").forEach(button => {
-  button.addEventListener("click", () => {
-    state.persona = button.dataset.persona;
-    document.querySelectorAll(".persona").forEach(b => b.classList.toggle("active", b === button));
-    document.getElementById("redraft-insight").textContent = personaText[state.persona].redraft;
-    state.weights = { ...redraftWeights[state.persona] };
-    syncWeightControls();
-    renderClusters();
-    renderRedraft();
-  });
-});
-
 const navLinks = [...document.querySelectorAll(".nav a")];
 const sections = navLinks.map(link => document.querySelector(link.getAttribute("href")));
 const navObserver = new IntersectionObserver(entries => {
@@ -725,22 +726,31 @@ sections.forEach(section => navObserver.observe(section));
 
 // Scene 4: AIOpen text clustering result from the clustered open-ended response pipeline.
 const clusterData = window.AIOPEN_CLUSTER_DATA;
-const clusterCats = clusterData?.cats || [
-  { id: "problem", name: "Problem Solving", color: "#f97316" },
-  { id: "design", name: "System Design", color: "#4e9af1" },
-  { id: "comm", name: "Communication", color: "#a78bfa" },
-  { id: "domain", name: "Domain Sense", color: "#34d399" },
-  { id: "fund", name: "CS Fundamentals", color: "#facc15" },
-  { id: "ai", name: "AI Fluency", color: "#ec4899" },
-  { id: "adapt", name: "Adaptability", color: "#22d3ee" }
-];
+const clusterPalette = {
+  problem: palette.catProblem,
+  design: palette.catDesign,
+  comm: palette.catComm,
+  domain: palette.catDomain,
+  fund: palette.catFund,
+  ai: palette.catAi,
+  adapt: palette.catAdapt
+};
+const clusterCats = (clusterData?.cats || [
+  { id: "problem", name: "Problem Solving" },
+  { id: "design", name: "System Design" },
+  { id: "comm", name: "Communication" },
+  { id: "domain", name: "Domain Sense" },
+  { id: "fund", name: "CS Fundamentals" },
+  { id: "ai", name: "AI Fluency" },
+  { id: "adapt", name: "Adaptability" }
+]).map(cat => ({ ...cat, color: clusterPalette[cat.id] || palette.muted }));
 const clusterCatById = Object.fromEntries(clusterCats.map(d => [d.id, d]));
 const clusterSubs = (clusterData?.subs || []).slice()
   .sort((a, b) => b.count - a.count)
   .slice(0, 30)
   .map(d => ({
     ...d,
-    color: clusterCatById[d.cat]?.color || "#64748b",
+    color: clusterCatById[d.cat]?.color || palette.muted,
     catName: clusterCatById[d.cat]?.name || "Cluster",
     seniorShare: d.expW ? (d.expW[3] || 0) + (d.expW[4] || 0) : .45,
     juniorShare: d.expW ? (d.expW[0] || 0) + (d.expW[1] || 0) : .2
@@ -880,7 +890,7 @@ const clusterCircles = clusterNodeLayer.selectAll("circle").data(clusterNodes, d
   .attr("r", d => d.r)
   .attr("fill", d => d.color)
   .attr("fill-opacity", .72)
-  .attr("stroke", "#111827")
+  .attr("stroke", palette.ink)
   .attr("stroke-width", 1.4)
   .on("mouseenter", (event, d) => {
     nudgeCluster(d);
