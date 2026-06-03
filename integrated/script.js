@@ -1021,6 +1021,8 @@ function renderSkillList(items) {
       node = el.querySelector(`.skill-card[data-skill="${CSS.escape(d.name)}"]`);
     }
     node.style.top = `${(d.rank - 1) * 43}px`;
+    // Keep the rising card stacked above the others while it slides past them.
+    node.style.zIndex = String(100 - d.rank);
     node.classList.toggle("changed", d.move !== 0);
     node.querySelector(".rank").textContent = d.rank;
     node.querySelector(".skill-meta").textContent = d.meta;
@@ -1030,10 +1032,11 @@ function renderSkillList(items) {
     badge.classList.toggle("up", d.move > 0);
     badge.classList.toggle("down", d.move < 0);
   });
-  items.forEach(d => {
-    const node = existing.get(d.name) || el.querySelector(`.skill-card[data-skill="${CSS.escape(d.name)}"]`);
-    if (node) el.appendChild(node);
-  });
+  // NOTE: do NOT reorder the cards in the DOM here. Cards are positioned purely
+  // by their absolute `top`, so DOM order is visually irrelevant — and calling
+  // appendChild() on an already-attached node re-inserts it, which cancels its
+  // in-flight CSS `top` transition and makes the rank change snap (flicker)
+  // instead of animating. Stacking is handled by z-index above.
 }
 function renderRedraft() {
   const scored = originalBoard.map(d => ({ ...d, score: scoreSkill(d) })).sort((a,b) => b.score - a.score).map((d, i) => ({ ...d, redraft: i + 1 }));
@@ -1056,25 +1059,19 @@ function renderRedraft() {
 ["pop", "growth", "ai"].forEach(key => {
   const input = document.getElementById(`weight-${key}`);
   input.addEventListener("input", () => {
+    // Sliders only stage new weights — the board does not change until the
+    // Redraft button is pressed. Just update the weight readout + note.
     state.weights[key] = Number(input.value);
     document.getElementById(`weight-${key}-value`).value = state.weights[key];
-    state.redrafted = true;
     document.getElementById("weight-note").textContent = `Custom ${personaName()} weights: popularity ${state.weights.pop}, momentum ${state.weights.growth}, AI fit ${state.weights.ai}.`;
-    document.getElementById("redraft-button").textContent = "Redraft Again";
-    renderRedraft();
   });
 });
 document.getElementById("redraft-button").addEventListener("click", () => {
-  if (state.redrafted) {
-    state.redrafted = false;
-    renderRedraft();
-    window.setTimeout(() => {
-      state.redrafted = true;
-      renderRedraft();
-    }, 140);
-  } else {
-    state.redrafted = true;
-  }
+  // Apply the staged slider weights with a single render. Cards keep their
+  // identity across renders, so changing each card's `top` animates it from
+  // its current spot to the new ranking via the CSS transition — no snap-back
+  // double render, which previously read as a flicker.
+  state.redrafted = true;
   document.getElementById("redraft-button").textContent = "Redraft Again";
   renderRedraft();
 });
@@ -1094,15 +1091,6 @@ renderRedraft();
     const el = document.querySelector(sel);
     if (el) el.click();
   };
-  function setRedraft(want) {
-    const t = document.getElementById("redraft-title");
-    const btn = document.getElementById("redraft-button");
-    if (!t || !btn) return;
-    const isRedrafted = /AI-era/i.test(t.textContent);
-    if (want && !isRedrafted) btn.click();
-    if (!want && isRedrafted) btn.click();
-  }
-
   // Per-scene step config. Step 0 reuses the scene's original prompt text.
   const CFG = {
     threat: [
@@ -1145,13 +1133,8 @@ renderRedraft();
         fire: () => click('#clusters [data-cluster-filter="senior"]'),
       },
     ],
-    next: [
-      { fire: () => setRedraft(false) },
-      {
-        html: '<div class="micro"><b>Redraft for the AI era.</b> Re-weight popularity, momentum, and AI-fit — the board reshuffles toward what still pays.</div>',
-        fire: () => setRedraft(true),
-      },
-    ],
+    // The "next" (Redraft) scene is intentionally excluded from scrollytelling:
+    // its board is driven only by the left-side weight sliders and Redraft button.
   };
 
   const stepActions = [];
@@ -1161,7 +1144,6 @@ renderRedraft();
     if (!scene) return;
     const viz = scene.querySelector(".viz-card");
     const prompt = scene.querySelector(".prompt");
-    const promptHTML = prompt ? prompt.innerHTML : "";
     if (!viz) return;
 
     const graphic = document.createElement("div");
@@ -1173,7 +1155,13 @@ renderRedraft();
     CFG[id].forEach((s, i) => {
       const d = document.createElement("div");
       d.className = "step";
-      d.innerHTML = (i === 0 ? promptHTML : "") + (s.html || "");
+      // Step 0 keeps the scene's original prompt. Move the live child nodes
+      // (not an innerHTML copy) so listeners on the redraft button + weight
+      // sliders survive the scene.innerHTML reset below.
+      if (i === 0 && prompt) {
+        while (prompt.firstChild) d.appendChild(prompt.firstChild);
+      }
+      if (s.html) d.insertAdjacentHTML("beforeend", s.html);
       col.appendChild(d);
       stepActions.push({ el: d, fire: s.fire });
     });
