@@ -3,8 +3,8 @@ const { GAP, CATCH, SHORT } = window.INDEX_SCROLL_PAY_DATA || {};
 const { ATRO, PREM, TASKS } = window.INDEX_SCROLL_VERIFY_DATA || {};
 const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {};
 // Source script block 1.
-// Act 1 — "Y-axis morph": the SAME developer dots first sit on an AI-use
-// cadence axis (threatened devs skew higher), then slide to a salary axis where
+// Act 1 — "Y-axis morph": the SAME developer dots first sit on a REAL AI-use
+// frequency axis (threatened devs skew higher), then slide to a salary axis where
 // the three group medians fall level. Driven by scroll via window.__threatSetMode.
 (function(){
   const tip = d3.select("#tooltip");
@@ -14,34 +14,26 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   const fmtK = d => "$" + d3.format(".0f")(d/1000) + "K";
   const fmt$ = d => "$" + d3.format(",")(Math.round(d));
 
-  const W=980, H=520, m={t:92,r:60,b:58,l:64};
+  const W=980, H=520, m={t:92,r:60,b:58,l:84};   // l:84 keeps the rotated axis title clear of the (longer) AI-frequency tick labels
   const svg = d3.select("#gi-svg");
   const groups = ["Feel threatened","Not threatened","Unsure"];   // x categories
   const threatByGroup = {}; PAY.forEach(p=>threatByGroup[p.threat]=p);
 
-  // modeled AI-use intensity per group (see threat_salary_data.js → AI_USE)
+  // real AI-use frequency per group (see threat_salary_data.js → AI_USE)
   const AI = (window.INDEX_SCROLL_THREAT_DATA && window.INDEX_SCROLL_THREAT_DATA.AI_USE) || {
     levels:["Won't","Plan to","Monthly","Weekly","Daily"],
-    meanByGroup:{"Feel threatened":3.05,"Not threatened":2.05,"Unsure":2.55},
-    spread:0.95, threatRateLow:10, threatRateHigh:21
+    meanByGroup:{"Feel threatened":2.82,"Not threatened":2.49,"Unsure":2.75},
+    threatRateLow:12, threatRateHigh:18, dailyShareByGroup:{"Feel threatened":49,"Not threatened":40,"Unsure":45}
   };
 
   const x   = d3.scalePoint().domain(groups).range([m.l+90, W-m.r-90]).padding(0.5);
   const ySal= d3.scaleLinear().domain([0,300000]).range([H-m.b, m.t]).clamp(true);   // salary
   const yAI = d3.scaleLinear().domain([-0.4,4.4]).range([H-m.b, m.t]).clamp(true);   // AI cadence 0..4
 
-  // tiny seeded PRNG so the modeled AI values are stable across reloads
-  function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
-
-  // build one node per developer: real salary + modeled AI cadence
+  // build one node per developer: each POINTS entry is [real salary, real AI-use level]
   const nodes=[];
   groups.forEach((grp,gi)=>{
-    const vals=POINTS[grp]||[], mu=AI.meanByGroup[grp], sp=AI.spread, rand=rng(1000*(gi+1)+7);
-    vals.forEach(v=>{
-      let a=mu+(rand()+rand()+rand()-1.5)*sp*1.3;   // ~bell-shaped around the group mean
-      a=Math.max(-0.35,Math.min(4.35,a));
-      nodes.push({grp,gi,v,ai:a});
-    });
+    (POINTS[grp]||[]).forEach(p=>{ nodes.push({grp,gi,v:p[0],ai:p[1]}); });
   });
 
   // beeswarm horizontal offsets for a set of {idx,cy} (same collision walk as before)
@@ -79,7 +71,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     .style("opacity",0).call(d3.axisLeft(yAI).tickValues([0,1,2,3,4]).tickFormat(i=>AI.levels[i]));
   const axTitle = svg.append("text").attr("transform","rotate(-90)")
     .attr("x",-H/2).attr("y",16).attr("text-anchor","middle")
-    .attr("fill","#667085").attr("font-size",12).text("AI use cadence");
+    .attr("fill","#667085").attr("font-size",12).text("AI-use frequency");
 
   // developer dots (start in AI-cadence positions)
   const dots = svg.append("g").selectAll("circle").data(nodes).join("circle")
@@ -118,21 +110,23 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
   function setMode(mode, animate){
     const sal = mode==="salary";
     const dur = animate ? 950 : 0;
-    const t = svg.transition().duration(dur).ease(d3.easeCubicInOut);
-    dots.transition(t).attr("cx",d=>d.cx+(sal?d.salOX:d.aiOX)).attr("cy",d=>sal?d.salY:d.aiY);
-    axS.transition(t).style("opacity",sal?1:0);
-    axA.transition(t).style("opacity",sal?0:1);
-    axTitle.text(sal?"Annual salary (USA, USD)":"AI use cadence");
+    // direct set when not animating (robust even where rAF/transitions don't run);
+    // smooth transition only for the animated scroll morph.
+    const sel = s => dur ? s.transition().duration(dur).ease(d3.easeCubicInOut) : s;
+    sel(dots).attr("cx",d=>d.cx+(sal?d.salOX:d.aiOX)).attr("cy",d=>sal?d.salY:d.aiY);
+    sel(axS).style("opacity",sal?1:0);
+    sel(axA).style("opacity",sal?0:1);
+    axTitle.text(sal?"Annual salary (USA, USD)":"AI-use frequency");
     groups.forEach(grp=>{
       const yPos = sal ? ySal(threatByGroup[grp].median_comp) : yAI(AI.meanByGroup[grp]);
-      med[grp].bar.transition(t).attr("y1",yPos).attr("y2",yPos);
-      med[grp].lab.transition(t).attr("y",yPos-8).text(sal?"":AI.levels[Math.round(AI.meanByGroup[grp])]);
+      sel(med[grp].bar).attr("y1",yPos).attr("y2",yPos);
+      sel(med[grp].lab).attr("y",yPos-8).text(sal?"":AI.levels[Math.round(AI.meanByGroup[grp])]);
     });
-    connector.transition(t).attr("opacity",sal?0.6:0);
-    flatNote.transition(t).attr("opacity",sal?0.85:0);
+    sel(connector).attr("opacity",sal?0.6:0);
+    sel(flatNote).attr("opacity",sal?0.85:0);
     modeNote.attr("font-size", sal ? 19 : 14).text(sal
       ? "Same pay, whatever the fear — the three medians sit level."
-      : "Threatened developers skew toward heavier AI use ("+AI.threatRateLow+"% → "+AI.threatRateHigh+"% feel threatened, non-users → daily users).");
+      : "The threatened use AI more, not less — "+AI.dailyShareByGroup["Feel threatened"]+"% use it daily vs "+AI.dailyShareByGroup["Not threatened"]+"% of the calm.");
   }
   window.__threatSetMode = setMode;
 
@@ -140,7 +134,7 @@ const { languageSkills, redraftWeights } = window.INDEX_SCROLL_REDRAFT_DATA || {
     '<span class="legend-item"><span class="swatch" style="background:var(--red)"></span>Feel threatened</span>' +
     '<span class="legend-item"><span class="swatch" style="background:#0f766e"></span>Not threatened</span>' +
     '<span class="legend-item"><span class="swatch" style="background:#94a3b8"></span>Unsure</span>' +
-    '<span class="legend-item" style="opacity:.8">Scroll: the Y axis morphs from AI-use cadence &rarr; salary.</span>'
+    '<span class="legend-item" style="opacity:.8">Scroll: the Y axis morphs from AI-use frequency &rarr; salary.</span>'
   );
 
   setMode("ai", false);   // initial view = AI-use cadence
@@ -1114,11 +1108,11 @@ renderRedraft();
     threat: [
       { fire: () => window.__threatSetMode && window.__threatSetMode("ai", true) },
       {
-        html: '<div class="micro"><b>The more you use AI, the more it threatens.</b> Threat perception climbs from 10% among non-users to 21% among daily-agent users — so the developers leaning hardest on AI sit highest on this axis.</div>',
+        html: '<div class="micro"><b>Fear is not avoidance.</b> Developers who feel threatened use AI <b>more</b>, not less — 49% use it daily vs 40% of the calm. Their cloud sits highest on this axis.</div>',
         fire: () => window.__threatSetMode && window.__threatSetMode("ai", true),
       },
       {
-        html: '<div class="micro"><b>But the pay is the same.</b> Swap the Y axis to salary and the three clouds drop into line — within one country, the threatened and the calm earn the same. The fear is psychological, not financial.</div>',
+        html: '<div class="micro"><b>Yet the fear never touches pay.</b> Swap the Y axis to salary and the three clouds drop into line — within one country, the threatened and the calm earn the same (~$150K). The fear is psychological, not financial.</div>',
         fire: () => window.__threatSetMode && window.__threatSetMode("salary", true),
       },
     ],
